@@ -36,7 +36,7 @@ export const Projects: React.FC = () => {
   const handleLaunchRun = async (projectId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      const run = await createRun(projectId);
+      const run = await createRun(projectId, { demo_mode: false });
       navigate(`/live?run_id=${run.id}&project_id=${projectId}`);
     } catch (err) {
       console.error(err);
