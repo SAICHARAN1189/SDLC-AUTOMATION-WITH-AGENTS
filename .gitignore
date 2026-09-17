@@ -24,6 +24,7 @@ frontend/.env.local
 frontend/playwright-report/
 frontend/test-results/
 frontend/blob-report/
+*.tsbuildinfo
 
 *.zip
 *.pyc

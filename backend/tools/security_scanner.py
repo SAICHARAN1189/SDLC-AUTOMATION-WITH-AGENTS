@@ -8,7 +8,10 @@ SECRET_REGEX = re.compile(
     r"(api[_-]?key|secret|password|token)\s*=\s*['\"][^'\"]+['\"]",
     re.I,
 )
-SQL_INJECTION = re.compile(r"(execute|executemany)\s*\(\s*[f\"'].*%s|f[\"'].*SELECT|cursor\.execute\(\s*[f\"']", re.I)
+SQL_INJECTION = re.compile(
+    r"(execute|executemany)\s*\(\s*[f\"'].*%s|f[\"'].*(SELECT|INSERT|UPDATE|DELETE|DROP|ALTER)|cursor\.execute\(\s*[f\"']",
+    re.I,
+)
 XSS = re.compile(r"(innerHTML|dangerouslySetInnerHTML|markupsafe\.Markup\()", re.I)
 COMMAND = re.compile(r"(os\.system|subprocess\.(call|run|Popen)|eval\(|exec\()", re.I)
 DESERIALIZE = re.compile(r"(pickle\.loads|yaml\.load\(|marshal\.loads)", re.I)
