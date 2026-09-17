@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html, body, #root {
+  min-height: 100%;
+  background: #0b0d10;
+}
+
+body {
+  margin: 0;
+  font-feature-settings: "ss01";
+}
+
+.pulse-run {
+  box-shadow: 0 0 0 1px rgba(208, 255, 63, 0.35);
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(208, 255, 63, 0.25); }
+  50% { box-shadow: 0 0 0 4px rgba(208, 255, 63, 0.08); }
+}
+
+.react-flow__node {
+  font-family: "IBM Plex Sans", sans-serif;
+}
