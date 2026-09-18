@@ -120,17 +120,14 @@ export const Settings: React.FC = () => {
         <div className="space-y-3 font-mono text-xs">
           <div className="flex items-center justify-between p-3 rounded-lg bg-[#0d1117] border border-[#30363d]">
             <div>
-              <div className="font-semibold text-zinc-200">Demo Mode Active</div>
+              <div className="font-semibold text-zinc-200">Live AI Inference Active</div>
               <div className="text-[11px] text-zinc-400 font-sans mt-0.5">
-                Uses deterministic responses for fast evaluation and testing while executing real LangGraph state transitions.
+                Full-fidelity AI agent execution using live Groq LLM models and LangGraph state orchestration.
               </div>
             </div>
-            <input
-              type="checkbox"
-              checked={demoMode}
-              onChange={(e) => setDemoMode(e.target.checked)}
-              className="w-4 h-4 rounded border-[#30363d] text-emerald-500 focus:ring-emerald-500"
-            />
+            <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold">
+              ENABLED
+            </span>
           </div>
 
           <div className="p-3 rounded-lg bg-[#0d1117] border border-[#30363d] space-y-1.5">

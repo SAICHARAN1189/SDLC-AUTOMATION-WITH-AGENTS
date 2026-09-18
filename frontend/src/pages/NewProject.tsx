@@ -17,10 +17,10 @@ import { createProject, createRun } from "../services/api";
 const PRESETS = [
   {
     id: "food_delivery",
-    title: "Secure Food Delivery Platform (Faculty Demo)",
+    title: "Secure Food Delivery Platform",
     description:
       "Build a secure online food delivery platform with customer ordering, driver real-time tracking, restaurant menu management, and strict payment card isolation.",
-    badge: "Recommended Faculty Demo",
+    badge: "High Security",
   },
   {
     id: "telemedicine",
@@ -85,9 +85,14 @@ export const NewProject: React.FC = () => {
       // 1. Create project
       const project = await createProject({ name: name.trim(), idea: idea.trim() });
 
-      // 2. Launch initial run
+      // 2. Launch initial run with real AI inference (demo_mode: false)
       const run = await createRun(project.id, {
         execution_mode: executionMode,
+        demo_mode: false,
+        primary_model: primaryModel,
+        security_max_retries: securityMaxRetries,
+        qa_max_retries: qaMaxRetries,
+        review_max_retries: reviewMaxRetries,
       });
 
       // 3. Navigate to live workspace
