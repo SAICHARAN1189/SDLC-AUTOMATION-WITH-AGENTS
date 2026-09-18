@@ -81,7 +81,7 @@ export const Dashboard: React.FC = () => {
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#21262d] hover:bg-[#30363d] text-zinc-200 border border-[#30363d] text-xs font-medium transition-colors cursor-pointer"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>Load Food Delivery Preset</span>
+              <span>Explore Faculty Demo Preset</span>
             </button>
 
             <Link

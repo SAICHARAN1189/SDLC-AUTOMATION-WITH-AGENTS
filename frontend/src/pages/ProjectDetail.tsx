@@ -43,7 +43,7 @@ export const ProjectDetail: React.FC = () => {
     if (!id) return;
     setLaunching(true);
     try {
-      const run = await createRun(id, { execution_mode: "AUTONOMOUS", demo_mode: false });
+      const run = await createRun(id, { execution_mode: "AUTONOMOUS" });
       navigate(`/live?run_id=${run.id}&project_id=${id}`);
     } catch (err) {
       console.error(err);

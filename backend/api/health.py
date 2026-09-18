@@ -12,9 +12,9 @@ health_bp = Blueprint("health", __name__)
 
 @health_bp.get("/api/health")
 def health():
-    db = "ok" if database_available() else "local-memory"
-    llm = "ok" if groq_client.available else "needs-api-key"
-    status = "ok"
+    db = "ok" if database_available() else ("demo-memory" if settings.demo_mode else "error")
+    llm = "ok" if groq_client.available else ("demo" if settings.demo_mode else "error")
+    status = "ok" if db != "error" else "degraded"
     return ok({"status": status, "database": db, "llm": llm, "demo_mode": settings.demo_mode})
 
 

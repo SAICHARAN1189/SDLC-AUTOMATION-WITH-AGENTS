@@ -29,11 +29,15 @@ def _jwks() -> Optional[PyJWKClient]:
 
 
 def verify_token(token: str) -> dict[str, Any]:
-    if token in {"demo-token", "DEMO", "local-token"} or not settings.supabase_url:
+    if settings.demo_mode and token in {"demo-token", "DEMO"}:
+        return DEMO_USER
+    if token.startswith("demo-") and settings.demo_mode:
         return DEMO_USER
     jwks = _jwks()
     if jwks is None:
-        return DEMO_USER
+        if settings.demo_mode:
+            return DEMO_USER
+        raise PermissionError("AUTH_ERROR: authentication is not configured")
     signing_key = jwks.get_signing_key_from_jwt(token)
     payload = jwt.decode(
         token,

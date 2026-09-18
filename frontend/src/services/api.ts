@@ -66,15 +66,7 @@ export async function createProject(data: { name: string; idea: string }): Promi
 // Runs API
 export async function createRun(
   projectId: string,
-  options: {
-    execution_mode?: "AUTONOMOUS" | "STEP_BY_STEP";
-    stage?: string;
-    demo_mode?: boolean;
-    primary_model?: string;
-    security_max_retries?: number;
-    qa_max_retries?: number;
-    review_max_retries?: number;
-  } = {}
+  options: { execution_mode?: "AUTONOMOUS" | "STEP_BY_STEP"; stage?: string } = {}
 ): Promise<PipelineRun> {
   return api<PipelineRun>(`/api/projects/${projectId}/runs`, {
     method: "POST",

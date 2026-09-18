@@ -15,10 +15,10 @@ class Settings(BaseSettings):
     )
 
     groq_api_key: str = ""
-    primary_model: str = "llama-3.3-70b-versatile"
-    fast_model: str = "llama-3.1-8b-instant"
-    reasoning_model: str = "llama-3.3-70b-versatile"
-    comparison_models: str = "llama-3.3-70b-versatile,llama-3.1-8b-instant,mixtral-8x7b-32768"
+    primary_model: str = "openai/gpt-oss-120b"
+    fast_model: str = "openai/gpt-oss-20b"
+    reasoning_model: str = "openai/gpt-oss-120b"
+    comparison_models: str = "openai/gpt-oss-20b,openai/gpt-oss-120b"
 
     supabase_url: str = ""
     supabase_anon_key: str = ""
@@ -27,7 +27,7 @@ class Settings(BaseSettings):
 
     database_url: str = ""
 
-    demo_mode: bool = False
+    demo_mode: bool = True
     frontend_url: str = "http://localhost:5173"
     cors_origins: str = "http://localhost:5173"
     flask_env: str = "development"

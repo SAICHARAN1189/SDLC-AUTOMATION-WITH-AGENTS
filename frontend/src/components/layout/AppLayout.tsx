@@ -39,10 +39,10 @@ export const AppLayout: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Live AI Agents Active Badge */}
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-medium">
+            {/* Demo Mode Badge */}
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono font-medium">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>LIVE AI AGENTS ACTIVE</span>
+              <span>DEMO MODE ACTIVE</span>
             </div>
 
             {/* Zero-CrewAI Guarantee Pill */}

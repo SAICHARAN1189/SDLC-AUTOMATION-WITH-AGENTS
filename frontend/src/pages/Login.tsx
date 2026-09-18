@@ -90,8 +90,8 @@ export const Login: React.FC = () => {
             onClick={handleDemoAccess}
             className="w-full py-2.5 rounded-lg bg-[#21262d] hover:bg-[#30363d] text-zinc-200 border border-[#30363d] text-xs font-semibold font-mono flex items-center justify-center gap-2 transition-colors cursor-pointer"
           >
-            <Sparkles className="w-4 h-4 text-emerald-400" />
-            <span>Instant Workspace Access</span>
+            <Sparkles className="w-4 h-4 text-amber-400" />
+            <span>Enter Demo Mode (One-Click Bypass)</span>
             <ArrowRight className="w-3.5 h-3.5 text-zinc-400" />
           </button>
         </div>
