@@ -70,11 +70,8 @@ export const Sidebar: React.FC = () => {
           <Activity className="w-4 h-4 animate-pulse" />
         </div>
         <div>
-          <div className="font-semibold text-sm tracking-wide text-zinc-100 flex items-center gap-1.5">
+          <div className="font-semibold text-sm tracking-wide text-zinc-100">
             SDLC NEXUS
-            <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              v1.0
-            </span>
           </div>
           <div className="text-[11px] text-zinc-400 font-mono tracking-tight">AI Multi-Agent Engine</div>
         </div>

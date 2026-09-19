@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![SDLC Nexus Platform](https://img.shields.io/badge/Platform-SDLC%20Nexus%20v1.0-emerald?style=for-the-badge&logo=nexus&logoColor=white)
+![SDLC Nexus Platform](https://img.shields.io/badge/Platform-SDLC%20Nexus-emerald?style=for-the-badge&logo=nexus&logoColor=white)
 ![LangGraph Native](https://img.shields.io/badge/Orchestration-LangGraph%20StateGraph-059669?style=for-the-badge&logo=diagram-next&logoColor=white)
 ![React 19](https://img.shields.io/badge/Frontend-React%2019%20%2B%20Vite%20%2B%20Tailwind-61DAFB?style=for-the-badge&logo=react&logoColor=black)
 ![Flask REST](https://img.shields.io/badge/Backend-Python%20Flask%20REST%20%2B%20SSE-3776AB?style=for-the-badge&logo=python&logoColor=white)
