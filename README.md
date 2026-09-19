@@ -88,17 +88,35 @@ SDLC-AUTOMATION-WITH-AGENTS/
 
 ### 1. Environment Setup
 
-Copy `.env.example` to `.env` in the root (and configure backend/frontend as required):
+Copy `.env.example` to `.env` in the root:
 ```bash
 cp .env.example .env
 ```
 
-Set your API keys:
+Configure your LLM providers (backend only — never exposed to client):
 ```env
+# Centralized LLM Provider Configuration
+LLM_PROVIDER=gemini
+ENABLE_LLM_FALLBACK=false
+
+# Google Gemini (Primary Provider)
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-3.6-flash
+
+# Groq (Secondary / Model Lab Provider)
 GROQ_API_KEY=your_groq_api_key_here
-DATABASE_URL=sqlite:///sdlc.db  # or postgresql://...
+GROQ_MODEL=openai/gpt-oss-120b
+
+# Database & App
+DATABASE_URL=sqlite:///sdlc.db
 SECRET_KEY=your_secret_key
 ```
+
+### Provider Architecture & Model Lab
+- **Centralized Provider**: All autonomous engineering agents route requests through `backend.llm.provider.provider`, abstracting away provider-specific details.
+- **Provider Switching**: Easily switch the primary provider across the entire SDLC pipeline by toggling `LLM_PROVIDER=gemini` or `LLM_PROVIDER=groq`.
+- **Model Lab**: When explicitly triggered, compares real model latencies, token lengths, and heuristic engineering scores between Google Gemini (`gemini-3.6-flash`) and Groq (`openai/gpt-oss-120b`).
+- **Security**: All API keys are loaded strictly on the backend and are excluded from version control via `.gitignore`.
 
 ### 2. Backend Setup
 

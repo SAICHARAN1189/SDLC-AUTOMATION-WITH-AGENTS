@@ -50,12 +50,18 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
 
   const getStatus = (stage: StageName): StageStatus => {
     if (runStatus === "COMPLETED") return "COMPLETED";
-    if (runStatus === "FAILED" && stage === currentStage) return "FAILED";
 
-    const currentIndex = stageOrder.indexOf(currentStage);
+    const activeStage = (currentStage as string) === "DEVELOPER" ? "DEVELOPMENT" : currentStage;
+    const currentIndex = (activeStage as string) === "START" ? 0 : stageOrder.indexOf(activeStage as StageName);
     const targetIndex = stageOrder.indexOf(stage);
 
-    if (stage === currentStage) {
+    if (runStatus === "FAILED") {
+      if (stage === activeStage || ((activeStage as string) === "START" && stage === "REQUIREMENTS")) return "FAILED";
+      if (currentIndex >= 0 && targetIndex < currentIndex) return "COMPLETED";
+      return "QUEUED";
+    }
+
+    if (stage === activeStage) {
       if (runStatus === "RUNNING") {
         if (
           (stage === "DEVELOPMENT" && (securityReworkCount > 0 || qaReworkCount > 0 || reviewReworkCount > 0)) ||
@@ -68,7 +74,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
       return "WAITING";
     }
 
-    if (targetIndex < currentIndex) {
+    if (currentIndex >= 0 && targetIndex < currentIndex) {
       return "COMPLETED";
     }
 
@@ -87,6 +93,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
           role: "PRD & User Stories",
           status: getStatus("REQUIREMENTS"),
           selected: selectedStageKey === "requirements_node",
+          modelBadge: "Gemini 3.5 Flash-Lite",
         },
       },
       {
@@ -99,6 +106,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
           role: "Tech Stack & Modular Specs",
           status: getStatus("ARCHITECTURE"),
           selected: selectedStageKey === "architecture_node",
+          modelBadge: "Gemini 3.8 Flash",
         },
       },
       {
@@ -111,6 +119,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
           role: "Mermaid & Flow Topology",
           status: getStatus("VISUAL_ARCHITECTURE"),
           selected: selectedStageKey === "visual_architecture_node",
+          modelBadge: "Gemini 3.1 Flash-Lite",
         },
       },
       {
@@ -124,6 +133,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
           status: getStatus("DEVELOPMENT"),
           retries: Math.max(securityReworkCount, qaReworkCount, reviewReworkCount),
           selected: selectedStageKey === "developer_node",
+          modelBadge: "Groq GPT-OSS 120B",
         },
       },
       {
@@ -137,6 +147,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
           status: getStatus("SECURITY"),
           retries: securityReworkCount,
           selected: selectedStageKey === "security_node",
+          modelBadge: "Groq GPT-OSS 20B",
         },
       },
       {
@@ -150,6 +161,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
           status: getStatus("QA"),
           retries: qaReworkCount,
           selected: selectedStageKey === "qa_node",
+          modelBadge: "Groq GPT-OSS 120B",
         },
       },
       {
@@ -163,6 +175,7 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
           status: getStatus("REVIEW"),
           retries: reviewReworkCount,
           selected: selectedStageKey === "review_node",
+          modelBadge: "Gemini 3.5 Flash-Lite",
         },
       },
       {
@@ -303,7 +316,10 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
             if (n.data?.status === "COMPLETED") return "#388bfd";
             return "#30363d";
           }}
-          className="!bg-[#0d1117] !border-[#30363d] rounded"
+          maskColor="rgba(13, 17, 23, 0.75)"
+          maskStrokeColor="#10b981"
+          style={{ width: 140, height: 90, backgroundColor: "#0d1117" }}
+          className="!bg-[#0d1117] !border-[#30363d] rounded-lg shadow-xl"
         />
       </ReactFlow>
 

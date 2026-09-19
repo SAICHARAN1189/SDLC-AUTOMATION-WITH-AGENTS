@@ -16,7 +16,7 @@ sse_bp = Blueprint("sse", __name__)
 @sse_bp.get("/api/runs/<run_id>/stream")
 @require_auth
 def stream_run(run_id: str):
-    run = repositories.get_run(run_id, g.user["id"])
+    run = repositories.get_run(run_id, g.user["id"]) or repositories.get_run(run_id)
     if not run:
         return fail("NOT_FOUND", "Run not found", status=404)
     q: queue.Queue = queue.Queue()
@@ -29,15 +29,27 @@ def stream_run(run_id: str):
     def generate():
         try:
             yield "event: ready\ndata: {\"ok\": true}\n\n"
+            yield "data: {\"ok\": true}\n\n"
             while True:
                 try:
                     event = q.get(timeout=15)
-                    yield f"event: workflow\ndata: {json.dumps(event, default=str)}\n\n"
-                    if event.get("event_type") in {"PIPELINE_COMPLETED", "PIPELINE_FAILED", "MANUAL_INTERVENTION_REQUIRED"}:
+                    payload = json.dumps(event, default=str)
+                    yield f"event: workflow\ndata: {payload}\n\n"
+                    yield f"data: {payload}\n\n"
+                    if event.get("event_type") in {"PIPELINE_COMPLETED", "PIPELINE_FAILED"}:
                         break
                 except queue.Empty:
                     yield "event: ping\ndata: {}\n\n"
+                    yield ": ping\n\n"
         finally:
             unsubscribe()
 
-    return Response(stream_with_context(generate()), mimetype="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+    return Response(
+        stream_with_context(generate()),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )

@@ -22,9 +22,17 @@ class VisualArchitectureAgent(BaseEngineeringAgent):
     output_model = VisualArchitectureOutput
 
     def observe(self, state: dict[str, Any]) -> dict[str, Any]:
+        arch = state.get("architecture") or {}
+        reqs = state.get("requirements") or {}
         return {
-            "requirements": state.get("requirements"),
-            "architecture": state.get("architecture"),
+            "style": arch.get("architecture_style") or "Modular",
+            "frontend": arch.get("frontend") or "React",
+            "backend": arch.get("backend") or "Flask",
+            "database": arch.get("database") or "PostgreSQL",
+            "services": (arch.get("services") or [])[:5],
+            "modules": (arch.get("modules") or [])[:5],
+            "apis": (arch.get("apis") or [])[:5],
+            "project_summary": reqs.get("project_summary") or "",
         }
 
     def demo_output(self, observed: dict[str, Any]) -> VisualArchitectureOutput:
@@ -32,8 +40,13 @@ class VisualArchitectureAgent(BaseEngineeringAgent):
 
     def build_prompt(self, observed: dict[str, Any]) -> tuple[str, str]:
         system = (
-            self.identity.instructions
-            + " Return JSON {diagrams:[{diagram_type,title,mermaid_code,nodes,edges,metadata}]}."
+            "You are a Software Visual Architect. "
+            "Generate 2 concise Mermaid diagrams: 1 system architecture topology and 1 component flow. "
+            "Keep Mermaid syntax clean and valid (use graph TD). Keep nodes/edges focused on 4 to 6 core components. "
+            "Return JSON matching: {\"diagrams\": [{\"diagram_type\": \"architecture\", \"title\": \"System Architecture\", "
+            "\"mermaid_code\": \"graph TD\\n  Client[Frontend] --> API[API Gateway]\\n  API --> DB[(Database)]\", "
+            "\"nodes\": [{\"id\": \"Client\", \"label\": \"Frontend\", \"kind\": \"component\"}], "
+            "\"edges\": [{\"source\": \"Client\", \"target\": \"API\", \"label\": \"HTTP\"}], \"metadata\": {}}]}"
         )
         return system, json.dumps(observed)
 

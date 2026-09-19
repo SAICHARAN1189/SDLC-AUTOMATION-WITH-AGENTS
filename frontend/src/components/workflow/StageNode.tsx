@@ -34,6 +34,7 @@ interface StageNodeData {
   duration?: string;
   retries?: number;
   selected?: boolean;
+  modelBadge?: string;
 }
 
 export const StageNode: React.FC<{ data: StageNodeData }> = ({ data }) => {
@@ -79,6 +80,12 @@ export const StageNode: React.FC<{ data: StageNodeData }> = ({ data }) => {
           <div>
             <div className="text-xs font-semibold tracking-tight">{data.label}</div>
             <div className="text-[10px] text-zinc-400 font-mono">{data.role}</div>
+            {data.modelBadge && (
+              <div className="text-[9px] text-emerald-400/90 font-mono flex items-center gap-1 mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/70 inline-block" />
+                {data.modelBadge}
+              </div>
+            )}
           </div>
         </div>
 

@@ -40,12 +40,13 @@ export type PipelineRun = {
   project_id: string;
   user_id?: string;
   execution_mode: "AUTONOMOUS" | "STEP_BY_STEP";
-  status: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED" | "MANUAL_INTERVENTION_REQUIRED" | "STOPPED";
+  status: "PENDING" | "RUNNING" | "WAITING" | "COMPLETED" | "FAILED" | "MANUAL_INTERVENTION_REQUIRED" | "STOPPED";
   current_stage: StageName;
   started_at?: string;
   completed_at?: string;
   error_message?: string;
   state?: Record<string, unknown>;
+  primary_model?: string;
   events?: WorkflowEvent[];
 };
 
@@ -99,6 +100,8 @@ export type AgentIdentity = {
   instructions: string;
   tools: string[];
   model?: string;
+  provider?: string;
+  fallbacks?: Array<{ provider: string; model: string }>;
 };
 
 export type RequirementsOutput = {

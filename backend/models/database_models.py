@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any, Optional
 
 from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, func
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -15,7 +15,7 @@ class Base(DeclarativeBase):
 class Project(Base):
     __tablename__ = "projects"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True)
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
     user_id: Mapped[str] = mapped_column(String(128), index=True)
     name: Mapped[str] = mapped_column(String(255))
     idea: Mapped[str] = mapped_column(Text)
@@ -31,7 +31,7 @@ class Project(Base):
 class PipelineRun(Base):
     __tablename__ = "pipeline_runs"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True)
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
     project_id: Mapped[str] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), index=True)
     user_id: Mapped[str] = mapped_column(String(128), index=True)
     execution_mode: Mapped[str] = mapped_column(String(64))
@@ -41,6 +41,7 @@ class PipelineRun(Base):
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     config_json: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONB, nullable=True)
+    rework_count: Mapped[int] = mapped_column(Integer, default=0)
 
     project: Mapped[Project] = relationship(back_populates="runs")
 
@@ -48,7 +49,7 @@ class PipelineRun(Base):
 class WorkflowEventRow(Base):
     __tablename__ = "workflow_events"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True)
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
     run_id: Mapped[str] = mapped_column(ForeignKey("pipeline_runs.id", ondelete="CASCADE"), index=True)
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     stage: Mapped[str] = mapped_column(String(64))
@@ -62,7 +63,7 @@ class WorkflowEventRow(Base):
 class AgentExecution(Base):
     __tablename__ = "agent_executions"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True)
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
     run_id: Mapped[str] = mapped_column(ForeignKey("pipeline_runs.id", ondelete="CASCADE"), index=True)
     agent_name: Mapped[str] = mapped_column(String(128))
     model: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
@@ -77,7 +78,7 @@ class AgentExecution(Base):
 class Artifact(Base):
     __tablename__ = "artifacts"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True)
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
     run_id: Mapped[str] = mapped_column(ForeignKey("pipeline_runs.id", ondelete="CASCADE"), index=True)
     artifact_type: Mapped[str] = mapped_column(String(64), index=True)
     title: Mapped[str] = mapped_column(String(255))
@@ -90,7 +91,7 @@ class Artifact(Base):
 class SecurityFinding(Base):
     __tablename__ = "security_findings"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True)
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
     run_id: Mapped[str] = mapped_column(ForeignKey("pipeline_runs.id", ondelete="CASCADE"), index=True)
     category: Mapped[str] = mapped_column(String(128))
     severity: Mapped[str] = mapped_column(String(32), index=True)
@@ -107,7 +108,7 @@ class SecurityFinding(Base):
 class TestResult(Base):
     __tablename__ = "test_results"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True)
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
     run_id: Mapped[str] = mapped_column(ForeignKey("pipeline_runs.id", ondelete="CASCADE"), index=True)
     total: Mapped[int] = mapped_column(Integer, default=0)
     passed: Mapped[int] = mapped_column(Integer, default=0)
@@ -121,7 +122,7 @@ class TestResult(Base):
 class ReviewResult(Base):
     __tablename__ = "review_results"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True)
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
     run_id: Mapped[str] = mapped_column(ForeignKey("pipeline_runs.id", ondelete="CASCADE"), index=True)
     status: Mapped[str] = mapped_column(String(64))
     blocking_issues: Mapped[Optional[list[Any]]] = mapped_column(JSONB, nullable=True)
@@ -132,7 +133,7 @@ class ReviewResult(Base):
 class ModelComparison(Base):
     __tablename__ = "model_comparisons"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True)
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
     run_id: Mapped[str] = mapped_column(ForeignKey("pipeline_runs.id", ondelete="CASCADE"), index=True)
     model: Mapped[str] = mapped_column(String(128))
     latency: Mapped[float] = mapped_column(Float)
@@ -143,7 +144,7 @@ class ModelComparison(Base):
 class WorkflowCheckpoint(Base):
     __tablename__ = "workflow_checkpoints"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True)
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
     run_id: Mapped[str] = mapped_column(ForeignKey("pipeline_runs.id", ondelete="CASCADE"), index=True)
     thread_id: Mapped[str] = mapped_column(String(128), index=True)
     checkpoint_id: Mapped[str] = mapped_column(String(128), index=True)

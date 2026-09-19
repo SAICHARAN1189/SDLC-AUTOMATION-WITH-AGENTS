@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any, Optional
 
 from sqlalchemy import func, select
@@ -17,44 +18,35 @@ from backend.models.database_models import (
     WorkflowEventRow,
 )
 from backend.models.schemas import new_id, utc_now
-from backend.persistence import memory_store
-from backend.persistence.database import database_available, session_scope
-
-
-def _require_db() -> None:
-    if not database_available():
-        raise RuntimeError("PostgreSQL is not available")
+from backend.persistence.database import session_scope
+from backend.utils.logging import logger
 
 
 def create_project(user_id: str, name: str, idea: str) -> dict[str, Any]:
-    if not database_available():
-        return memory_store.create_project(user_id, name, idea)
-    _require_db()
+    logger.info(f"[PROJECT] Creating project: {name}")
     project = Project(id=new_id(), user_id=user_id, name=name, idea=idea, status="ACTIVE")
     with session_scope() as session:
         session.add(project)
         session.flush()
-        return serialize_project(project)
+        res = serialize_project(project)
+    logger.info(f"[PROJECT] Project persisted: {res['id']}")
+    return res
 
 
 def list_projects(user_id: str) -> list[dict[str, Any]]:
-    if not database_available():
-        return memory_store.list_projects(user_id)
     with session_scope() as session:
-        rows = session.scalars(select(Project).where(Project.user_id == user_id).order_by(Project.created_at.desc())).all()
+        stmt = select(Project).where(Project.user_id == user_id).order_by(Project.created_at.desc())
+        rows = session.scalars(stmt).all()
         return [serialize_project(row) for row in rows]
 
 
 def get_project(project_id: str, user_id: str) -> Optional[dict[str, Any]]:
-    if not database_available():
-        return memory_store.get_project(project_id, user_id)
     with session_scope() as session:
         row = session.scalar(select(Project).where(Project.id == project_id, Project.user_id == user_id))
         return serialize_project(row) if row else None
 
 
 def update_project(project_id: str, user_id: str, **fields: Any) -> Optional[dict[str, Any]]:
-    _require_db()
     with session_scope() as session:
         row = session.scalar(select(Project).where(Project.id == project_id, Project.user_id == user_id))
         if not row:
@@ -67,7 +59,6 @@ def update_project(project_id: str, user_id: str, **fields: Any) -> Optional[dic
 
 
 def delete_project(project_id: str, user_id: str) -> bool:
-    _require_db()
     with session_scope() as session:
         row = session.scalar(select(Project).where(Project.id == project_id, Project.user_id == user_id))
         if not row:
@@ -82,11 +73,10 @@ def create_run(
     execution_mode: str,
     config_json: Optional[dict[str, Any]] = None,
 ) -> dict[str, Any]:
-    if not database_available():
-        return memory_store.create_run(project_id, user_id, execution_mode, config_json)
-    _require_db()
+    run_id = new_id()
+    logger.info(f"[RUN] Creating pipeline run: {run_id} for project {project_id}")
     run = PipelineRun(
-        id=new_id(),
+        id=run_id,
         project_id=project_id,
         user_id=user_id,
         execution_mode=execution_mode,
@@ -94,16 +84,17 @@ def create_run(
         current_stage="START",
         started_at=utc_now(),
         config_json=config_json or {},
+        rework_count=0,
     )
     with session_scope() as session:
         session.add(run)
         session.flush()
-        return serialize_run(run)
+        res = serialize_run(run)
+    logger.info(f"[RUN] Run persisted: {run_id}")
+    return res
 
 
 def get_run(run_id: str, user_id: Optional[str] = None) -> Optional[dict[str, Any]]:
-    if not database_available():
-        return memory_store.get_run(run_id, user_id)
     with session_scope() as session:
         stmt = select(PipelineRun).where(PipelineRun.id == run_id)
         if user_id:
@@ -113,8 +104,6 @@ def get_run(run_id: str, user_id: Optional[str] = None) -> Optional[dict[str, An
 
 
 def list_runs(user_id: str, project_id: Optional[str] = None) -> list[dict[str, Any]]:
-    if not database_available():
-        return memory_store.list_runs(user_id, project_id)
     with session_scope() as session:
         stmt = select(PipelineRun).where(PipelineRun.user_id == user_id)
         if project_id:
@@ -123,12 +112,34 @@ def list_runs(user_id: str, project_id: Optional[str] = None) -> list[dict[str, 
         return [serialize_run(row) for row in rows]
 
 
+def _ensure_run_exists(session: Any, run_id: str, project_id: Optional[str] = None, user_id: str = "demo-user") -> None:
+    """Ensure parent Project and PipelineRun exist before inserting child records with foreign keys."""
+    run = session.scalar(select(PipelineRun).where(PipelineRun.id == run_id))
+    if not run:
+        p_id = project_id or "default-project"
+        proj = session.scalar(select(Project).where(Project.id == p_id))
+        if not proj:
+            session.add(Project(id=p_id, user_id=user_id, name="Default Project", idea="Automated or test project"))
+            session.flush()
+        session.add(
+            PipelineRun(
+                id=run_id,
+                project_id=p_id,
+                user_id=user_id,
+                execution_mode="FULL_AUTONOMOUS",
+                status="RUNNING",
+                current_stage="START",
+            )
+        )
+        session.flush()
+
+
 def update_run(run_id: str, **fields: Any) -> None:
-    if not database_available():
-        memory_store.update_run(run_id, **fields)
-        return
     with session_scope() as session:
         row = session.scalar(select(PipelineRun).where(PipelineRun.id == run_id))
+        if not row:
+            _ensure_run_exists(session, run_id)
+            row = session.scalar(select(PipelineRun).where(PipelineRun.id == run_id))
         if not row:
             return
         for key, value in fields.items():
@@ -148,17 +159,13 @@ def add_event(payload: dict[str, Any]) -> dict[str, Any]:
         "message": payload.get("message") or "",
         "metadata_json": payload.get("metadata") or payload.get("metadata_json") or {},
     }
-    if database_available():
-        with session_scope() as session:
-            session.add(WorkflowEventRow(**event))
-    else:
-        return memory_store.add_event(payload)
+    with session_scope() as session:
+        _ensure_run_exists(session, event["run_id"])
+        session.add(WorkflowEventRow(**event))
     return event
 
 
 def list_events(run_id: str) -> list[dict[str, Any]]:
-    if not database_available():
-        return memory_store.list_events(run_id)
     with session_scope() as session:
         rows = session.scalars(
             select(WorkflowEventRow).where(WorkflowEventRow.run_id == run_id).order_by(WorkflowEventRow.timestamp.asc())
@@ -181,28 +188,27 @@ def list_events(run_id: str) -> list[dict[str, Any]]:
 
 def add_agent_execution(payload: dict[str, Any]) -> str:
     execution_id = payload.get("id") or new_id()
-    if database_available():
-        with session_scope() as session:
-            session.add(
-                AgentExecution(
-                    id=execution_id,
-                    run_id=payload["run_id"],
-                    agent_name=payload["agent_name"],
-                    model=payload.get("model"),
-                    started_at=payload.get("started_at") or utc_now(),
-                    completed_at=payload.get("completed_at"),
-                    duration=payload.get("duration"),
-                    status=payload.get("status") or "RUNNING",
-                    retry_number=payload.get("retry_number") or 0,
-                    token_usage_if_available=payload.get("token_usage_if_available"),
-                )
+    run_id = payload["run_id"]
+    with session_scope() as session:
+        _ensure_run_exists(session, run_id)
+        session.add(
+            AgentExecution(
+                id=execution_id,
+                run_id=run_id,
+                agent_name=payload["agent_name"],
+                model=payload.get("model"),
+                started_at=payload.get("started_at") or utc_now(),
+                completed_at=payload.get("completed_at"),
+                duration=payload.get("duration"),
+                status=payload.get("status") or "RUNNING",
+                retry_number=payload.get("retry_number") or 0,
+                token_usage_if_available=payload.get("token_usage_if_available"),
             )
+        )
     return execution_id
 
 
 def complete_agent_execution(execution_id: str, status: str, duration: float, token_usage: Optional[dict] = None) -> None:
-    if not database_available():
-        return
     with session_scope() as session:
         row = session.scalar(select(AgentExecution).where(AgentExecution.id == execution_id))
         if not row:
@@ -215,8 +221,6 @@ def complete_agent_execution(execution_id: str, status: str, duration: float, to
 
 
 def list_agent_executions(run_id: str) -> list[dict[str, Any]]:
-    if not database_available():
-        return []
     with session_scope() as session:
         rows = session.scalars(
             select(AgentExecution).where(AgentExecution.run_id == run_id).order_by(AgentExecution.started_at.asc())
@@ -239,28 +243,24 @@ def list_agent_executions(run_id: str) -> list[dict[str, Any]]:
 
 
 def add_artifact(run_id: str, artifact_type: str, title: str, content: Optional[str] = None, storage_path: Optional[str] = None, metadata: Optional[dict] = None) -> str:
-    if not database_available():
-        return memory_store.add_artifact(run_id, artifact_type, title, content, storage_path, metadata)
     artifact_id = new_id()
-    if database_available():
-        with session_scope() as session:
-            session.add(
-                Artifact(
-                    id=artifact_id,
-                    run_id=run_id,
-                    artifact_type=artifact_type,
-                    title=title,
-                    content=content,
-                    storage_path=storage_path,
-                    metadata_json=metadata or {},
-                )
+    with session_scope() as session:
+        _ensure_run_exists(session, run_id)
+        session.add(
+            Artifact(
+                id=artifact_id,
+                run_id=run_id,
+                artifact_type=artifact_type,
+                title=title,
+                content=content,
+                storage_path=storage_path,
+                metadata_json=metadata or {},
             )
+        )
     return artifact_id
 
 
 def list_artifacts(run_id: str) -> list[dict[str, Any]]:
-    if not database_available():
-        return memory_store.list_artifacts(run_id)
     with session_scope() as session:
         rows = session.scalars(select(Artifact).where(Artifact.run_id == run_id).order_by(Artifact.created_at.asc())).all()
         return [
@@ -279,10 +279,8 @@ def list_artifacts(run_id: str) -> list[dict[str, Any]]:
 
 
 def replace_security_findings(run_id: str, findings: list[dict[str, Any]]) -> None:
-    if not database_available():
-        memory_store.replace_security_findings(run_id, findings)
-        return
     with session_scope() as session:
+        _ensure_run_exists(session, run_id)
         existing = session.scalars(select(SecurityFinding).where(SecurityFinding.run_id == run_id)).all()
         for row in existing:
             session.delete(row)
@@ -306,8 +304,6 @@ def replace_security_findings(run_id: str, findings: list[dict[str, Any]]) -> No
 
 
 def list_security_findings(run_id: str) -> list[dict[str, Any]]:
-    if not database_available():
-        return memory_store.list_security_findings(run_id)
     with session_scope() as session:
         rows = session.scalars(select(SecurityFinding).where(SecurityFinding.run_id == run_id)).all()
         return [
@@ -329,11 +325,173 @@ def list_security_findings(run_id: str) -> list[dict[str, Any]]:
         ]
 
 
-def add_test_result(run_id: str, payload: dict[str, Any]) -> None:
-    if not database_available():
-        memory_store.add_test_result(run_id, payload)
-        return
+def get_run_security_output(run_id: str) -> dict[str, Any]:
     with session_scope() as session:
+        art = session.scalars(
+            select(Artifact)
+            .where(Artifact.run_id == run_id, Artifact.artifact_type == "security")
+            .order_by(Artifact.created_at.desc())
+        ).first()
+        if art and art.content:
+            try:
+                parsed = json.loads(art.content)
+                if isinstance(parsed, dict) and "vulnerabilities" in parsed:
+                    return parsed
+            except Exception:
+                pass
+
+        rows = session.scalars(select(SecurityFinding).where(SecurityFinding.run_id == run_id)).all()
+        findings = [
+            {
+                "id": row.id,
+                "run_id": row.run_id,
+                "category": row.category,
+                "severity": (row.severity or "LOW").upper(),
+                "description": row.description,
+                "evidence": row.evidence,
+                "remediation": row.remediation,
+                "affected_file": row.affected_file,
+                "affected_line": row.affected_line,
+                "status": row.status,
+                "source": row.source,
+                "caused_rework": row.caused_rework,
+            }
+            for row in rows
+        ]
+        critical = sum(1 for f in findings if f["severity"] == "CRITICAL")
+        high = sum(1 for f in findings if f["severity"] == "HIGH")
+        medium = sum(1 for f in findings if f["severity"] == "MEDIUM")
+        low = sum(1 for f in findings if f["severity"] == "LOW")
+        overall = "FAIL" if (critical > 0 or high > 0) else ("WARNING" if medium > 0 else "PASS")
+        return {
+            "overall_status": overall,
+            "severity_summary": {"critical": critical, "high": high, "medium": medium, "low": low},
+            "vulnerabilities": findings,
+            "recommendations": [],
+            "remediation_actions": [],
+            "affected_files": list({f["affected_file"] for f in findings if f.get("affected_file")}),
+            "scan_timestamp": utc_now().isoformat(),
+            "disclaimer": "Dual-layer deterministic static analysis + LLM semantic threat assessment from Supabase audit repository.",
+        }
+
+
+def get_security_overview(user_id: str, project_id: Optional[str] = None) -> dict[str, Any]:
+    with session_scope() as session:
+        proj_query = select(Project).where(Project.user_id == user_id)
+        if project_id:
+            proj_query = proj_query.where(Project.id == project_id)
+        projects = session.scalars(proj_query.order_by(Project.created_at.desc())).all()
+        project_ids = [p.id for p in projects]
+
+        if not project_ids:
+            return {
+                "summary": {"total_projects": 0, "total_scans": 0, "critical": 0, "high": 0, "medium": 0, "low": 0, "resolved": 0, "open": 0},
+                "projects": [],
+                "findings": [],
+            }
+
+        runs = session.scalars(
+            select(PipelineRun)
+            .where(PipelineRun.project_id.in_(project_ids))
+            .order_by(PipelineRun.started_at.desc())
+        ).all()
+        run_ids = [r.id for r in runs]
+        run_to_project = {r.id: r.project_id for r in runs}
+        project_names = {p.id: p.name for p in projects}
+
+        findings_rows = []
+        if run_ids:
+            findings_rows = session.scalars(
+                select(SecurityFinding)
+                .where(SecurityFinding.run_id.in_(run_ids))
+            ).all()
+
+        findings_list = []
+        critical = high = medium = low = resolved = open_count = 0
+
+        for f in findings_rows:
+            p_id = run_to_project.get(f.run_id, "")
+            p_name = project_names.get(p_id, "Unknown Project")
+            sev = (f.severity or "LOW").upper()
+            if sev == "CRITICAL":
+                critical += 1
+            elif sev == "HIGH":
+                high += 1
+            elif sev == "MEDIUM":
+                medium += 1
+            else:
+                low += 1
+
+            st = (f.status or "OPEN").upper()
+            if st == "RESOLVED":
+                resolved += 1
+            else:
+                open_count += 1
+
+            findings_list.append({
+                "id": f.id,
+                "project_id": p_id,
+                "project_name": p_name,
+                "run_id": f.run_id,
+                "category": f.category,
+                "severity": sev,
+                "description": f.description,
+                "evidence": f.evidence,
+                "remediation": f.remediation,
+                "affected_file": f.affected_file,
+                "affected_line": f.affected_line,
+                "status": st,
+                "source": f.source,
+                "caused_rework": f.caused_rework,
+            })
+
+        project_summaries = []
+        for p in projects:
+            p_runs = [r for r in runs if r.project_id == p.id]
+            p_findings = [f for f in findings_list if f["project_id"] == p.id]
+            p_crit = sum(1 for f in p_findings if f["severity"] == "CRITICAL")
+            p_high = sum(1 for f in p_findings if f["severity"] == "HIGH")
+            p_med = sum(1 for f in p_findings if f["severity"] == "MEDIUM")
+            p_low = sum(1 for f in p_findings if f["severity"] == "LOW")
+            status = "FAIL" if (p_crit > 0 or p_high > 0) else ("WARNING" if p_med > 0 else "PASS")
+            last_dt = (p_runs[0].completed_at or p_runs[0].started_at) if p_runs else None
+
+            project_summaries.append({
+                "project_id": p.id,
+                "project_name": p.name,
+                "description": getattr(p, "idea", "") or "",
+                "total_runs": len(p_runs),
+                "latest_run_id": p_runs[0].id if p_runs else None,
+                "overall_status": status,
+                "findings_count": len(p_findings),
+                "severity_summary": {
+                    "critical": p_crit,
+                    "high": p_high,
+                    "medium": p_med,
+                    "low": p_low,
+                },
+                "last_scanned_at": last_dt.isoformat() if last_dt else None,
+            })
+
+        return {
+            "summary": {
+                "total_projects": len(projects),
+                "total_scans": len(runs),
+                "critical": critical,
+                "high": high,
+                "medium": medium,
+                "low": low,
+                "resolved": resolved,
+                "open": open_count,
+            },
+            "projects": project_summaries,
+            "findings": findings_list,
+        }
+
+
+def add_test_result(run_id: str, payload: dict[str, Any]) -> None:
+    with session_scope() as session:
+        _ensure_run_exists(session, run_id)
         session.add(
             TestResult(
                 id=new_id(),
@@ -350,8 +508,6 @@ def add_test_result(run_id: str, payload: dict[str, Any]) -> None:
 
 
 def latest_test_result(run_id: str) -> Optional[dict[str, Any]]:
-    if not database_available():
-        return memory_store.latest_test_result(run_id)
     with session_scope() as session:
         row = session.scalars(select(TestResult).where(TestResult.run_id == run_id)).first()
         if not row:
@@ -370,10 +526,8 @@ def latest_test_result(run_id: str) -> Optional[dict[str, Any]]:
 
 
 def add_review_result(run_id: str, payload: dict[str, Any]) -> None:
-    if not database_available():
-        memory_store.add_review_result(run_id, payload)
-        return
     with session_scope() as session:
+        _ensure_run_exists(session, run_id)
         session.add(
             ReviewResult(
                 id=new_id(),
@@ -387,8 +541,6 @@ def add_review_result(run_id: str, payload: dict[str, Any]) -> None:
 
 
 def latest_review_result(run_id: str) -> Optional[dict[str, Any]]:
-    if not database_available():
-        return memory_store.latest_review_result(run_id)
     with session_scope() as session:
         row = session.scalars(select(ReviewResult).where(ReviewResult.run_id == run_id)).first()
         if not row:
@@ -404,10 +556,8 @@ def latest_review_result(run_id: str) -> Optional[dict[str, Any]]:
 
 
 def add_model_comparisons(run_id: str, results: list[dict[str, Any]]) -> None:
-    if not database_available():
-        memory_store.add_model_comparisons(run_id, results)
-        return
     with session_scope() as session:
+        _ensure_run_exists(session, run_id)
         for result in results:
             session.add(
                 ModelComparison(
@@ -422,8 +572,6 @@ def add_model_comparisons(run_id: str, results: list[dict[str, Any]]) -> None:
 
 
 def list_model_comparisons(run_id: str) -> list[dict[str, Any]]:
-    if not database_available():
-        return memory_store.list_model_comparisons(run_id)
     with session_scope() as session:
         rows = session.scalars(select(ModelComparison).where(ModelComparison.run_id == run_id)).all()
         return [
@@ -440,10 +588,8 @@ def list_model_comparisons(run_id: str) -> list[dict[str, Any]]:
 
 
 def save_checkpoint(run_id: str, thread_id: str, checkpoint_id: str, state: dict[str, Any], parent: Optional[str] = None, metadata: Optional[dict] = None) -> None:
-    if not database_available():
-        memory_store.save_checkpoint(run_id, thread_id, checkpoint_id, state, parent, metadata)
-        return
     with session_scope() as session:
+        _ensure_run_exists(session, run_id)
         session.add(
             WorkflowCheckpoint(
                 id=new_id(),
@@ -458,8 +604,6 @@ def save_checkpoint(run_id: str, thread_id: str, checkpoint_id: str, state: dict
 
 
 def latest_checkpoint(run_id: str) -> Optional[dict[str, Any]]:
-    if not database_available():
-        return memory_store.latest_checkpoint(run_id)
     with session_scope() as session:
         row = session.scalars(
             select(WorkflowCheckpoint)
@@ -479,8 +623,6 @@ def latest_checkpoint(run_id: str) -> Optional[dict[str, Any]]:
 
 
 def dashboard_metrics(user_id: str) -> dict[str, int]:
-    if not database_available():
-        return memory_store.metrics(user_id)
     with session_scope() as session:
         projects = session.scalar(select(func.count(Project.id)).where(Project.user_id == user_id)) or 0
         active = session.scalar(
@@ -539,5 +681,6 @@ def serialize_run(row: PipelineRun) -> dict[str, Any]:
         "started_at": row.started_at.isoformat() if row.started_at else None,
         "completed_at": row.completed_at.isoformat() if row.completed_at else None,
         "error_message": row.error_message,
+        "rework_count": getattr(row, "rework_count", 0),
         "config": row.config_json or {},
     }

@@ -38,6 +38,7 @@ def upgrade() -> None:
         sa.Column("completed_at", sa.DateTime(timezone=True)),
         sa.Column("error_message", sa.Text()),
         sa.Column("config_json", postgresql.JSONB()),
+        sa.Column("rework_count", sa.Integer(), server_default="0"),
     )
     op.create_table(
         "workflow_events",

@@ -55,10 +55,17 @@ class SecurityAgent(BaseEngineeringAgent):
             + " Merge deterministic findings with additional LLM analysis. Return SecurityOutput JSON. "
             "Set overall_status to FAIL and blocking true if any HIGH or CRITICAL remains."
         )
+        arch = observed.get("architecture") or {}
         user = json.dumps(
             {
+                "architecture_context": {
+                    "style": arch.get("architecture_style"),
+                    "backend": arch.get("backend"),
+                    "database": arch.get("database"),
+                    "apis": arch.get("apis") or [],
+                },
                 "deterministic_findings": deterministic,
-                "files": [{"path": f.get("path"), "content": (f.get("content") or "")[:4000]} for f in files],
+                "files": [{"path": f.get("path"), "content": f.get("content")} for f in files],
             }
         )
         return system, user

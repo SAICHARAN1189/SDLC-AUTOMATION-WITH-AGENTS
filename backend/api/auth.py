@@ -58,6 +58,9 @@ def current_user() -> dict[str, Any]:
     if header.lower().startswith("bearer "):
         token = header.split(" ", 1)[1].strip()
         return verify_token(token)
+    token_param = request.args.get("token")
+    if token_param:
+        return verify_token(token_param)
     if settings.demo_mode:
         return DEMO_USER
     raise PermissionError("AUTH_ERROR: missing bearer token")

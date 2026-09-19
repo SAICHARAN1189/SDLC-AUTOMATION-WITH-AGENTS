@@ -31,6 +31,13 @@ class RequirementsAgent(BaseEngineeringAgent):
         return demo_requirements(observed["user_idea"])
 
     def build_prompt(self, observed: dict[str, Any]) -> tuple[str, str]:
-        system = self.identity.instructions + " Return a JSON object with all required fields."
+        system = (
+            self.identity.instructions + " Return a JSON object with keys: "
+            "project_summary (string), stakeholders (list of strings), target_users (list of strings), "
+            "functional_requirements (list of strings), non_functional_requirements (list of strings), "
+            "user_stories (list of strings), acceptance_criteria (list of strings), "
+            "assumptions (list of strings), constraints (list of strings), dependencies (list of strings), "
+            "edge_cases (list of strings), risks (list of strings)."
+        )
         user = json.dumps({"user_idea": observed["user_idea"]})
         return system, user

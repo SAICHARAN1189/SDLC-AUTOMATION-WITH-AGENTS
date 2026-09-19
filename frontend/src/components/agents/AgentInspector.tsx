@@ -135,16 +135,51 @@ export const AgentInspector: React.FC<AgentInspectorProps> = ({
 
                 <div className="grid grid-cols-2 gap-2 text-[11px]">
                   <div className="p-2 rounded bg-[#161b22] border border-[#30363d]">
-                    <div className="text-zinc-400 text-[10px]">Inference Model</div>
-                    <div className="text-emerald-400 font-semibold">{agent.model || "Groq Llama-3-70B"}</div>
+                    <div className="text-zinc-400 text-[10px]">Assigned LLM</div>
+                    <div className="text-emerald-400 font-semibold">{agent.model || "gemini-3.8-flash"}</div>
+                    <div className="text-[10px] text-zinc-400 uppercase mt-0.5 font-mono">
+                      Provider: <span className="text-zinc-200">{agent.provider || (agent.model?.includes("gpt-oss") ? "Groq" : "Gemini")}</span>
+                    </div>
                   </div>
                   <div className="p-2 rounded bg-[#161b22] border border-[#30363d]">
                     <div className="text-zinc-400 text-[10px]">Stage Runtime</div>
                     <div className="text-zinc-200 flex items-center gap-1">
                       <Clock className="w-3 h-3 text-zinc-400" /> {duration}
                     </div>
+                    <div className="text-[10px] text-zinc-400 uppercase mt-0.5 font-mono">
+                      Status: <span className="text-emerald-300">{status}</span>
+                    </div>
                   </div>
                 </div>
+
+                {/* Router Fallback Chain Display */}
+                {agent.fallbacks && agent.fallbacks.length > 0 && (
+                  <div className="p-2.5 rounded bg-[#161b22] border border-[#30363d]">
+                    <div className="text-[10px] text-zinc-400 uppercase tracking-wider mb-1">Configured Fallbacks</div>
+                    <div className="space-y-1">
+                      {agent.fallbacks.map((fb, i) => (
+                        <div key={i} className="text-[10.5px] text-zinc-300 flex items-center gap-1.5 font-mono">
+                          <span className="text-zinc-400">#{i + 1}</span>
+                          <span className="px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-200 text-[10px] uppercase">{fb.provider}</span>
+                          <span className="text-zinc-300">{fb.model}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* If fallback occurred during execution */}
+                {Boolean((outputs as Record<string, any>)?._meta?.fallback_used) && (
+                  <div className="p-2.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-300 font-mono text-[11px]">
+                    <div className="font-semibold text-amber-200 flex items-center gap-1 text-[10px] uppercase">
+                      <RotateCcw className="w-3 h-3 text-amber-400" /> Fallback Invoked
+                    </div>
+                    <div className="mt-1 text-[10.5px] space-y-0.5">
+                      <div>Primary: <span className="text-zinc-300">{String((outputs as Record<string, any>)?._meta?.primary_model || agent.model)}</span></div>
+                      <div>Fallback: <span className="text-emerald-300">{String((outputs as Record<string, any>)?._meta?.model)}</span></div>
+                    </div>
+                  </div>
+                )}
 
                 {currentTask && (
                   <div>

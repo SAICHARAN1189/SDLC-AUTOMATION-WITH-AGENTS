@@ -33,6 +33,24 @@ class ArchitectureAgent(BaseEngineeringAgent):
         return demo_architecture(observed.get("user_idea") or "")
 
     def build_prompt(self, observed: dict[str, Any]) -> tuple[str, str]:
-        system = self.identity.instructions + " Return JSON matching ArchitectureOutput."
+        system = (
+            f"{self.identity.instructions}\n\n"
+            "You MUST return a valid JSON object matching ArchitectureOutput with the following fields:\n"
+            "- architecture_style: (string, e.g. 'Modular Monolith' or 'Component-Based Client-Server')\n"
+            "- frontend: (string, e.g. 'React with TypeScript and Tailwind CSS' or 'HTML5 / Modern Vanilla JS')\n"
+            "- backend: (string, e.g. 'Python Flask REST API with blueprint modularity')\n"
+            "- database: (string, e.g. 'PostgreSQL (Supabase) with SQLAlchemy ORM' or 'In-Memory / SQLite')\n"
+            "- services: (list of strings representing service boundaries or functional components)\n"
+            "- modules: (list of strings representing specific internal code modules)\n"
+            "- apis: (list of strings, e.g. ['GET /api/v1/health', 'POST /api/v1/calculate', 'GET /api/v1/history'])\n"
+            "- authentication: (string describing auth mechanism, e.g. 'Supabase Auth JWT' or 'Session cookies / None')\n"
+            "- authorization: (string describing permissions, e.g. 'Role-based access control (RBAC)')\n"
+            "- data_model: (list of strings representing primary entities or tables)\n"
+            "- integrations: (list of strings representing external tools, APIs, or libraries)\n"
+            "- deployment_architecture: (string describing target hosting, e.g. 'Containerized Docker / Cloud Run')\n"
+            "- security_considerations: (list of strings with concrete threat mitigation measures)\n"
+            "- scalability_considerations: (list of strings with caching, indexing, or scaling strategies)\n\n"
+            "Ensure all string fields are populated with realistic, relevant technical choices and not left blank."
+        )
         user = json.dumps(observed)
         return system, user

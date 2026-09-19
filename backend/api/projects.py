@@ -42,15 +42,13 @@ def get_project(project_id: str):
 @require_auth
 def rename_project(project_id: str):
     body = request.get_json(silent=True) or {}
-    try:
-        updated = repositories.update_project(project_id, g.user["id"], name=body.get("name"), idea=body.get("idea"), status=body.get("status"))
-    except RuntimeError:
-        project = repositories.get_project(project_id, g.user["id"])
-        if not project:
-            return fail("NOT_FOUND", "Project not found", status=404)
-        if body.get("name"):
-            project["name"] = body["name"]
-        return ok(project)
+    updated = repositories.update_project(
+        project_id,
+        g.user["id"],
+        name=body.get("name"),
+        idea=body.get("idea"),
+        status=body.get("status"),
+    )
     if not updated:
         return fail("NOT_FOUND", "Project not found", status=404)
     return ok(updated)
@@ -59,10 +57,7 @@ def rename_project(project_id: str):
 @projects_bp.delete("/api/projects/<project_id>")
 @require_auth
 def delete_project(project_id: str):
-    try:
-        deleted = repositories.delete_project(project_id, g.user["id"])
-    except RuntimeError:
-        return fail("DATABASE_ERROR", "Delete requires PostgreSQL", status=400)
+    deleted = repositories.delete_project(project_id, g.user["id"])
     if not deleted:
         return fail("NOT_FOUND", "Project not found", status=404)
     return ok({"deleted": True})

@@ -6,7 +6,7 @@ from typing import Any, Type
 from pydantic import BaseModel, ValidationError
 
 from backend.config.settings import settings
-from backend.llm.provider import provider
+from backend.llm.router import model_router
 from backend.models.schemas import AgentIdentity, ErrorCategory
 from backend.utils.logging import logger
 from backend.utils.validators import parse_model
@@ -38,20 +38,32 @@ class BaseEngineeringAgent:
         observed = self.observe(state)
         started = perf_counter()
         demo = bool(state.get("demo_mode", settings.demo_mode))
+        agent_key = self.identity.name.value
+        agent_cfg = model_router.get_config(agent_key)
         usage = {}
-        model_used = "demo-deterministic" if demo else provider.resolve_model(self.identity.default_model_slot, model_override)
+        model_used = "demo-deterministic" if demo else (model_override or agent_cfg.primary.model)
+        provider_used = "demo" if demo else (model_router.resolve_provider_for_model(model_override) if model_override else agent_cfg.primary.provider)
+        attempts = 1
+        fallback_used = False
         try:
             if demo:
                 output = self.demo_output(observed)
             else:
                 system, user = self.build_prompt(observed)
-                result = provider.complete(
-                    system=system,
-                    user=user,
-                    slot=self.identity.default_model_slot,
-                    model=model_override,
+                messages = [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ]
+                result = model_router.generate(
+                    agent_name=agent_key,
+                    messages=messages,
+                    model_override=model_override,
+                    json_mode=True,
                 )
                 model_used = result.model
+                provider_used = result.provider
+                attempts = result.attempts
+                fallback_used = result.fallback_used
                 usage = result.usage
                 try:
                     output = parse_model(result.content, self.output_model)
@@ -69,7 +81,10 @@ class BaseEngineeringAgent:
             "agent completed",
             extra={
                 "agent": self.identity.name.value,
+                "provider": provider_used,
                 "model": model_used,
+                "attempts": attempts,
+                "fallback_used": fallback_used,
                 "duration": duration,
                 "status": "COMPLETED",
                 "run_id": state.get("run_id"),
@@ -78,7 +93,12 @@ class BaseEngineeringAgent:
         payload = output.model_dump(mode="json")
         payload["_meta"] = {
             "agent": self.identity.name.value,
+            "provider": provider_used,
             "model": model_used,
+            "attempts": attempts,
+            "fallback_used": fallback_used,
+            "primary_model": agent_cfg.primary.model,
+            "fallbacks": [fb.to_dict() for fb in agent_cfg.fallbacks],
             "duration": duration,
             "usage": usage,
             "demo": demo,

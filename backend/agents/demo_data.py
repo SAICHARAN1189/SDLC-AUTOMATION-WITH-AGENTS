@@ -435,8 +435,11 @@ def demo_qa_fail() -> TestOutput:
         failures=[
             TestFailure(
                 test_name="test_order_total",
+                test="test_order_total",
                 expected="20",
                 actual="None",
+                root_cause="AssertionError: assert None == 20",
+                affected_files=["orders.py"],
                 stack_trace="AssertionError: assert None == 20",
                 affected_component="orders.py",
             )
@@ -445,6 +448,7 @@ def demo_qa_fail() -> TestOutput:
         recommendations=["Fix order_total for qty handling"],
         executed=True,
         overall_status=GateStatus.FAIL,
+        severity="HIGH",
     )
 
 

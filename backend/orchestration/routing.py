@@ -48,6 +48,11 @@ def after_developer(state: ProjectState) -> Route:
     return "security_node"
 
 
+def _total_reworks(state: ProjectState) -> int:
+    counts = state.get("retry_counts") or {}
+    return int(counts.get("security") or 0) + int(counts.get("qa") or 0) + int(counts.get("review") or 0)
+
+
 def after_security(state: ProjectState) -> Route:
     if _stopped(state):
         return "__end__"
@@ -55,7 +60,7 @@ def after_security(state: ProjectState) -> Route:
     blocking = bool(report.get("blocking")) or report.get("overall_status") == "FAIL"
     retries = (state.get("retry_counts") or {}).get("security", 0)
     max_retries = int(state.get("security_max_retries") or 2)
-    if blocking and retries >= max_retries:
+    if blocking and (retries >= max_retries or _total_reworks(state) >= 6):
         return "finalization_node"
     if blocking:
         return "developer_node"
@@ -71,7 +76,7 @@ def after_qa(state: ProjectState) -> Route:
     failed = report.get("overall_status") == "FAIL" or int(report.get("failed") or 0) > 0
     retries = (state.get("retry_counts") or {}).get("qa", 0)
     max_retries = int(state.get("qa_max_retries") or 2)
-    if failed and retries >= max_retries:
+    if failed and (retries >= max_retries or _total_reworks(state) >= 6):
         return "finalization_node"
     if failed:
         return "developer_node"
@@ -87,7 +92,7 @@ def after_review(state: ProjectState) -> Route:
     rework = bool(report.get("rework_required")) or report.get("review_status") == "FAIL"
     retries = (state.get("retry_counts") or {}).get("review", 0)
     max_retries = int(state.get("review_max_retries") or 2)
-    if rework and retries >= max_retries:
+    if rework and (retries >= max_retries or _total_reworks(state) >= 6):
         return "finalization_node"
     if rework:
         return "developer_node"

@@ -19,8 +19,17 @@ AGENT_REGISTRY = {
 }
 
 
+from backend.llm.provider import provider
+from backend.llm.router import model_router
+
+
 def serialize_agents() -> list[dict]:
     items = []
     for agent in AGENT_REGISTRY.values():
-        items.append(agent.identity.model_dump(mode="json"))
+        data = agent.identity.model_dump(mode="json")
+        cfg = model_router.get_config(agent.identity.name.value)
+        data["model"] = cfg.primary.model
+        data["provider"] = cfg.primary.provider
+        data["fallbacks"] = [fb.to_dict() for fb in cfg.fallbacks]
+        items.append(data)
     return items

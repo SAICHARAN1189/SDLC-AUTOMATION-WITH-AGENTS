@@ -6,7 +6,7 @@ from typing import Any
 from backend.agents import AGENT_REGISTRY
 from backend.models.schemas import DeveloperMode, EventType, utc_now
 from backend.orchestration.events import emit
-from backend.orchestration.state import ProjectState
+from backend.orchestration.state import ProjectState, update_live_state
 from backend.persistence import repositories
 from backend.tools.artifact_tools import artifact_storage_path, files_to_zip_bytes, maybe_upload_bytes
 
@@ -27,18 +27,24 @@ def _message(sender: str, receiver: str, message_type: str, content: str, recomm
 def _run_agent(state: ProjectState, agent_key: str, stage: str) -> dict[str, Any]:
     agent = AGENT_REGISTRY[agent_key]
     run_id = state["run_id"]
-    emit(run_id, EventType.AGENT_STARTED.value, f"{agent.identity.display_name} started", stage, agent_key, "RUNNING")
+    mapped_stage = "DEVELOPMENT" if stage in ("DEVELOPER", "DEVELOPMENT") else stage
+    repositories.update_run(run_id, current_stage=mapped_stage, status="RUNNING")
+    emit(run_id, EventType.AGENT_STARTED.value, f"{agent.identity.display_name} started", mapped_stage, agent_key, "RUNNING")
+    
+    raw_override = state.get("primary_model")
+    model_override = raw_override if raw_override and str(raw_override).lower() not in ("auto", "router", "default", "none") else None
+
     execution_id = repositories.add_agent_execution(
         {
             "run_id": run_id,
             "agent_name": agent_key,
-            "model": state.get("primary_model"),
+            "model": model_override,
             "status": "RUNNING",
             "retry_number": (state.get("retry_counts") or {}).get(stage.lower(), 0),
         }
     )
     try:
-        payload = agent.run(dict(state), model_override=state.get("primary_model"))
+        payload = agent.run(dict(state), model_override=model_override)
         meta = payload.pop("_meta", {})
         repositories.complete_agent_execution(execution_id, "COMPLETED", float(meta.get("duration") or 0), meta.get("usage"))
         emit(
@@ -48,7 +54,15 @@ def _run_agent(state: ProjectState, agent_key: str, stage: str) -> dict[str, Any
             stage,
             agent_key,
             "COMPLETED",
-            {"demo": meta.get("demo"), "model": meta.get("model")},
+            {
+                "demo": meta.get("demo"),
+                "model": meta.get("model"),
+                "provider": meta.get("provider"),
+                "attempts": meta.get("attempts"),
+                "fallback_used": meta.get("fallback_used"),
+                "primary_model": meta.get("primary_model"),
+                "fallbacks": meta.get("fallbacks"),
+            },
         )
         return payload, meta
     except Exception as exc:
@@ -68,6 +82,7 @@ def requirements_node(state: ProjectState) -> dict[str, Any]:
         "CONTINUE",
     )
     emit(state["run_id"], EventType.FEEDBACK_CREATED.value, message["content"], "REQUIREMENTS", "requirements_agent", metadata=message)
+    update_live_state(state["run_id"], {"requirements": output, "current_stage": "REQUIREMENTS"})
     return {
         "requirements": output,
         "current_stage": "REQUIREMENTS",
@@ -89,6 +104,7 @@ def architecture_node(state: ProjectState) -> dict[str, Any]:
         "CONTINUE",
     )
     emit(state["run_id"], EventType.FEEDBACK_CREATED.value, message["content"], "ARCHITECTURE", "architecture_agent", metadata=message)
+    update_live_state(state["run_id"], {"architecture": output, "current_stage": "ARCHITECTURE"})
     return {
         "architecture": output,
         "current_stage": "ARCHITECTURE",
@@ -101,6 +117,7 @@ def architecture_node(state: ProjectState) -> dict[str, Any]:
 def visual_architecture_node(state: ProjectState) -> dict[str, Any]:
     output, _ = _run_agent(state, "visual_architecture_agent", "VISUAL_ARCHITECTURE")
     artifact_id = repositories.add_artifact(state["run_id"], "diagrams", "Visual architecture", json.dumps(output, indent=2))
+    update_live_state(state["run_id"], {"visual_architecture": output, "current_stage": "VISUAL_ARCHITECTURE"})
     return {
         "visual_architecture": output,
         "current_stage": "VISUAL_ARCHITECTURE",
@@ -117,7 +134,24 @@ def developer_node(state: ProjectState) -> dict[str, Any]:
     if mode != DeveloperMode.INITIAL_IMPLEMENTATION.value:
         emit(state["run_id"], EventType.REWORK_STARTED.value, f"Developer rework: {mode}", "DEVELOPER", "developer_agent", "REWORKING")
     output, _ = _run_agent(state, "developer_agent", "DEVELOPER")
+    
+    # Guarantee that rework maintains all existing project files
+    existing_files = (state.get("code") or {}).get("files") or []
     files = output.get("files") or []
+    if mode != DeveloperMode.INITIAL_IMPLEMENTATION.value and existing_files:
+        current_paths = {
+            f.get("path") if isinstance(f, dict) else getattr(f, "path", "")
+            for f in files
+        }
+        for ef in existing_files:
+            ef_path = ef.get("path") if isinstance(ef, dict) else getattr(ef, "path", "")
+            ef_content = ef.get("content") if isinstance(ef, dict) else getattr(ef, "content", "")
+            if ef_path and ef_path not in current_paths:
+                files.append({"path": ef_path, "content": ef_content})
+                current_paths.add(ef_path)
+        output["files"] = files
+        output["project_structure"] = sorted(list(current_paths))
+
     zip_bytes = files_to_zip_bytes(files)
     storage_path = maybe_upload_bytes(artifact_storage_path(state["run_id"], "source.zip"), zip_bytes)
     artifact_id = repositories.add_artifact(
@@ -136,9 +170,10 @@ def developer_node(state: ProjectState) -> dict[str, Any]:
         content = "Initial implementation available for security analysis."
     message = _message("developer_agent", receiver, "CODE_UPDATED", content, "CONTINUE", affected_files=output.get("changed_files") or [])
     emit(state["run_id"], EventType.FEEDBACK_CREATED.value, content, "DEVELOPER", "developer_agent", metadata=message)
+    update_live_state(state["run_id"], {"code": output, "current_stage": "DEVELOPMENT"})
     return {
         "code": output,
-        "current_stage": "DEVELOPER",
+        "current_stage": "DEVELOPMENT",
         "current_agent": "developer_agent",
         "messages": [message],
         "artifact_ids": [artifact_id],
@@ -185,6 +220,7 @@ def security_node(state: ProjectState) -> dict[str, Any]:
         developer_mode = state.get("developer_mode") or DeveloperMode.INITIAL_IMPLEMENTATION.value
         status = "PASS"
     emit(state["run_id"], EventType.FEEDBACK_CREATED.value, message["content"], "SECURITY", "security_agent", metadata=message)
+    update_live_state(state["run_id"], {"security_report": output, "security_status": status, "current_stage": "SECURITY"})
     return {
         "security_report": output,
         "security_status": status,
@@ -208,7 +244,22 @@ def qa_node(state: ProjectState) -> dict[str, Any]:
     if failed:
         retries["qa"] = int(retries.get("qa") or 0) + 1
         emit(state["run_id"], EventType.TESTS_FAILED.value, "Important test failures exist", "QA", "qa_agent", "FAILED")
-        message = _message("qa_agent", "developer_agent", "QA_FEEDBACK", "Test failures require implementation fixes.", "REWORK", "HIGH")
+        
+        failure_affected: list[str] = []
+        for f in output.get("failures") or []:
+            for af in (f.get("affected_files") or []):
+                if af not in failure_affected:
+                    failure_affected.append(af)
+
+        message = _message(
+            "qa_agent",
+            "developer_agent",
+            "QA_FEEDBACK",
+            "Test failures require implementation fixes.",
+            "REWORK",
+            "HIGH",
+            failure_affected,
+        )
         max_retries = int(state.get("qa_max_retries") or 2)
         decision = "MANUAL_INTERVENTION_REQUIRED" if retries["qa"] >= max_retries else "QA_REWORK"
         developer_mode = DeveloperMode.QA_REWORK.value
@@ -223,6 +274,7 @@ def qa_node(state: ProjectState) -> dict[str, Any]:
         developer_mode = state.get("developer_mode") or DeveloperMode.INITIAL_IMPLEMENTATION.value
         status = "PASS"
     emit(state["run_id"], EventType.FEEDBACK_CREATED.value, message["content"], "QA", "qa_agent", metadata=message)
+    update_live_state(state["run_id"], {"test_report": output, "testing_status": status, "current_stage": "QA"})
     return {
         "test_report": output,
         "testing_status": status,
@@ -259,6 +311,7 @@ def review_node(state: ProjectState) -> dict[str, Any]:
         status = "PASS"
     emit(state["run_id"], EventType.REVIEW_COMPLETED.value, message["content"], "REVIEW", "review_agent", "COMPLETED" if not rework else "FAILED")
     emit(state["run_id"], EventType.FEEDBACK_CREATED.value, message["content"], "REVIEW", "review_agent", metadata=message)
+    update_live_state(state["run_id"], {"review_report": output, "review_status": status, "current_stage": "REVIEW"})
     return {
         "review_report": output,
         "review_status": status,
@@ -268,7 +321,7 @@ def review_node(state: ProjectState) -> dict[str, Any]:
         "current_stage": "REVIEW",
         "current_agent": "review_agent",
         "messages": [message],
-        "final_status": "MANUAL_INTERVENTION_REQUIRED" if decision == "MANUAL_INTERVENTION_REQUIRED" else state.get("final_status") or "PENDING",
+        "final_status": "MANUAL_INTERVENTION_REQUIRED" if decision == "MANUAL_INTERVENTION_REQUIRED" else ("COMPLETED" if decision == "CONTINUE" else "PENDING"),
     }
 
 
@@ -276,6 +329,7 @@ def model_comparison_node(state: ProjectState) -> dict[str, Any]:
     output, _ = _run_agent(state, "multi_model_agent", "MODEL_COMPARISON")
     repositories.add_model_comparisons(state["run_id"], output.get("results") or [])
     repositories.add_artifact(state["run_id"], "model_comparison", "Model comparison", json.dumps(output, indent=2))
+    update_live_state(state["run_id"], {"model_comparison": output, "current_stage": "MODEL_COMPARISON"})
     return {
         "model_comparison": output,
         "current_stage": "MODEL_COMPARISON",

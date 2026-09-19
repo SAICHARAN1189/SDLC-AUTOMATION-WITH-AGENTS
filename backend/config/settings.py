@@ -14,11 +14,23 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    llm_provider: str = "gemini"
+    enable_llm_fallback: bool = True
+
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-3.8-flash"
+    gemini_fast_model: str = "gemini-3.8-flash"
+    gemini_thinking_level: str = "low"
+
     groq_api_key: str = ""
-    primary_model: str = "llama-3.3-70b-versatile"
-    fast_model: str = "llama-3.1-8b-instant"
-    reasoning_model: str = "llama-3.3-70b-versatile"
-    comparison_models: str = "llama-3.3-70b-versatile,llama-3.1-8b-instant,mixtral-8x7b-32768"
+    groq_model: str = "openai/gpt-oss-120b"
+    groq_fast_model: str = "openai/gpt-oss-20b"
+    groq_fallback_model: str = "openai/gpt-oss-20b"
+
+    primary_model: str = "gemini-3.8-flash"
+    fast_model: str = "gemini-3.8-flash"
+    reasoning_model: str = "gemini-3.8-flash"
+    comparison_models: str = "gemini-3.8-flash,openai/gpt-oss-120b,openai/gpt-oss-20b,groq/compound,groq/compound-mini"
 
     supabase_url: str = ""
     supabase_anon_key: str = ""
@@ -26,6 +38,20 @@ class Settings(BaseSettings):
     supabase_storage_bucket: str = "sdlc-artifacts"
 
     database_url: str = ""
+    db_pool_size: int = 10
+    db_max_overflow: int = 20
+    db_pool_recycle: int = 1800
+    db_connect_timeout: int = 10
+
+    @property
+    def normalized_database_url(self) -> str:
+        url = (self.database_url or "").strip()
+        if not url:
+            return ""
+        # SQLAlchemy 2.0 requires postgresql:// instead of postgres://
+        if url.startswith("postgres://"):
+            url = "postgresql://" + url[len("postgres://"):]
+        return url
 
     demo_mode: bool = False
     frontend_url: str = "http://localhost:5173"

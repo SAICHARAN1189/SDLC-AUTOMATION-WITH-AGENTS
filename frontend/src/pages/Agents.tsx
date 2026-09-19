@@ -24,7 +24,7 @@ const FALLBACK_AGENTS: AgentIdentity[] = [
     goal: "Transform high-level software ideas into comprehensive, structured PRDs with functional requirements, acceptance criteria, and risk mitigations.",
     instructions: "Analyze target users, identify stakeholders, derive edge cases, and ensure non-functional specifications are measurable.",
     tools: ["spec_validator", "user_story_generator"],
-    model: "Groq Llama-3.3-70B",
+    model: "OpenAI GPT-OSS 120B",
   },
   {
     name: "architecture_agent",
@@ -33,7 +33,7 @@ const FALLBACK_AGENTS: AgentIdentity[] = [
     goal: "Architect modular distributed systems, defining API contracts, database schemas, authentication mechanisms, and scaling boundaries.",
     instructions: "Design clean service abstractions, select appropriate ORM patterns, and isolate sensitive domains.",
     tools: ["schema_validator", "api_contract_builder"],
-    model: "Groq Llama-3.3-70B",
+    model: "OpenAI GPT-OSS 120B",
   },
   {
     name: "visual_architecture_agent",
@@ -42,7 +42,7 @@ const FALLBACK_AGENTS: AgentIdentity[] = [
     goal: "Generate syntactically validated visual diagrams including system architecture, sequence flows, component graphs, and database ER models.",
     instructions: "Generate valid Mermaid code and verify syntax with deterministic AST parser before committing to state.",
     tools: ["mermaid_validator", "dag_renderer"],
-    model: "Groq Llama-3.3-70B",
+    model: "OpenAI GPT-OSS 120B",
   },
   {
     name: "developer_agent",
@@ -51,7 +51,7 @@ const FALLBACK_AGENTS: AgentIdentity[] = [
     goal: "Implement production-ready code files matching architecture, and iteratively refactor implementation based on Security, QA, and Review feedback.",
     instructions: "Support INITIAL_IMPLEMENTATION, SECURITY_REWORK, QA_REWORK, and REVIEW_REWORK execution modes.",
     tools: ["file_writer", "project_scaffolder", "dependency_resolver"],
-    model: "Groq Llama-3.3-70B",
+    model: "OpenAI GPT-OSS 120B",
   },
   {
     name: "security_agent",
@@ -60,7 +60,7 @@ const FALLBACK_AGENTS: AgentIdentity[] = [
     goal: "Scan source code for SQL injection, hardcoded secrets, XSS, and command injection; produce actionable remediation actions and trigger rework on blocking issues.",
     instructions: "Execute deterministic regex scans, evaluate finding severity, and update LangGraph state with remediation guidance.",
     tools: ["security_scanner", "secret_detector", "syntax_tree_inspector"],
-    model: "Groq Llama-3.3-70B",
+    model: "OpenAI GPT-OSS 120B",
   },
   {
     name: "qa_agent",
@@ -69,7 +69,7 @@ const FALLBACK_AGENTS: AgentIdentity[] = [
     goal: "Derive unit and integration test suites, execute tests within safe isolated sandbox, and pass structured failure reports to Developer Agent.",
     instructions: "Generate pytest scenarios covering edge cases and acceptance criteria; never fabricate test results.",
     tools: ["test_runner", "sandbox_executor", "coverage_analyzer"],
-    model: "Groq Llama-3.3-70B",
+    model: "OpenAI GPT-OSS 120B",
   },
   {
     name: "review_agent",
@@ -78,7 +78,7 @@ const FALLBACK_AGENTS: AgentIdentity[] = [
     goal: "Evaluate architectural integrity, modularity, security remediation, and maintainability to issue definitive PASS or FAIL rework gates.",
     instructions: "Inspect diffs, assess compliance with original PRD, verify absence of blocking findings, and authorize finalization.",
     tools: ["diff_inspector", "compliance_checker"],
-    model: "Groq Llama-3.3-70B",
+    model: "OpenAI GPT-OSS 120B",
   },
   {
     name: "multi_model_agent",

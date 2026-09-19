@@ -120,13 +120,13 @@ export const Settings: React.FC = () => {
         <div className="space-y-3 font-mono text-xs">
           <div className="flex items-center justify-between p-3 rounded-lg bg-[#0d1117] border border-[#30363d]">
             <div>
-              <div className="font-semibold text-zinc-200">Live AI Inference Active</div>
+              <div className="font-semibold text-zinc-200">Centralized Multi-Provider LLM Engine</div>
               <div className="text-[11px] text-zinc-400 font-sans mt-0.5">
-                Full-fidelity AI agent execution using live Groq LLM models and LangGraph state orchestration.
+                Primary Provider: Google Gemini (Active) · Secondary / Fallback Provider: Groq (Ready)
               </div>
             </div>
             <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold">
-              ENABLED
+              GEMINI + GROQ
             </span>
           </div>
 
@@ -134,7 +134,7 @@ export const Settings: React.FC = () => {
             <label className="text-[11px] text-zinc-300 block">Default Primary Model</label>
             <input
               type="text"
-              defaultValue="groq/llama-3.3-70b-versatile"
+              defaultValue="gemini-3.8-flash"
               className="w-full px-3 py-1.5 rounded bg-[#161b22] border border-[#30363d] text-zinc-200 text-xs focus:outline-none"
             />
           </div>

@@ -63,7 +63,7 @@ def initial_state(payload: dict[str, Any]) -> ProjectState:
         current_agent="",
         demo_mode=bool(payload.get("demo_mode", True)),
         stop_requested=False,
-        developer_mode="INITIAL_IMPLEMENTATION",
+        developer_mode=payload.get("developer_mode") or "INITIAL_IMPLEMENTATION",
         requested_stage=payload.get("requested_stage"),
         comparison_models=payload.get("comparison_models") or [],
         benchmark_prompt=payload.get("benchmark_prompt"),
@@ -71,14 +71,14 @@ def initial_state(payload: dict[str, Any]) -> ProjectState:
         security_max_retries=int(payload.get("security_max_retries", 2)),
         qa_max_retries=int(payload.get("qa_max_retries", 2)),
         review_max_retries=int(payload.get("review_max_retries", 2)),
-        requirements=None,
-        architecture=None,
-        visual_architecture=None,
-        code=None,
-        security_report=None,
-        test_report=None,
-        review_report=None,
-        model_comparison=None,
+        requirements=payload.get("requirements"),
+        architecture=payload.get("architecture"),
+        visual_architecture=payload.get("visual_architecture"),
+        code=payload.get("code"),
+        security_report=payload.get("security_report"),
+        test_report=payload.get("test_report"),
+        review_report=payload.get("review_report"),
+        model_comparison=payload.get("model_comparison"),
         messages=[],
         workflow_events=[],
         retry_counts={"security": int(retries.get("security", 0)), "qa": int(retries.get("qa", 0)), "review": int(retries.get("review", 0))},
@@ -91,3 +91,17 @@ def initial_state(payload: dict[str, Any]) -> ProjectState:
         timestamps={},
         last_decision=None,
     )
+
+
+_live_states: dict[str, dict[str, Any]] = {}
+
+
+def get_live_state(run_id: str) -> dict[str, Any]:
+    return _live_states.get(run_id) or {}
+
+
+def update_live_state(run_id: str, updates: dict[str, Any]) -> None:
+    if run_id not in _live_states:
+        _live_states[run_id] = {}
+    _live_states[run_id].update(updates)
+

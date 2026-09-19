@@ -101,6 +101,55 @@ export async function getRunArtifacts(runId: string): Promise<ArtifactItem[]> {
 }
 
 // Specialized Centers API
+export interface CentralSecurityOverview {
+  summary: {
+    total_projects: number;
+    total_scans: number;
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+    resolved: number;
+    open: number;
+  };
+  projects: Array<{
+    project_id: string;
+    project_name: string;
+    description: string;
+    total_runs: number;
+    latest_run_id: string | null;
+    overall_status: string;
+    findings_count: number;
+    severity_summary: { critical: number; high: number; medium: number; low: number };
+    last_scanned_at: string | null;
+  }>;
+  findings: Array<{
+    id: string;
+    project_id: string;
+    project_name: string;
+    run_id: string;
+    category: string;
+    severity: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
+    description: string;
+    evidence: string;
+    remediation: string;
+    affected_file: string;
+    affected_line: number;
+    status: string;
+    source: string;
+    caused_rework: boolean;
+  }>;
+}
+
+export async function getCentralSecurityOverview(projectId?: string): Promise<CentralSecurityOverview | null> {
+  try {
+    const query = projectId ? `?project_id=${projectId}` : "";
+    return await api<CentralSecurityOverview>(`/api/security${query}`);
+  } catch {
+    return null;
+  }
+}
+
 export async function getSecurityReport(runId: string): Promise<SecurityOutput | null> {
   try {
     return await api<SecurityOutput>(`/api/security/${runId}`);
@@ -147,6 +196,32 @@ export async function runAgent(agentName: string, payload: Record<string, unknow
 
 export const runSingleAgent = runAgent;
 
+// Continue / Step Run API
+export async function continueRun(
+  runId: string,
+  requestedStage?: string
+): Promise<{ state: Record<string, unknown> }> {
+  return api<{ state: Record<string, unknown> }>(`/api/runs/${runId}/continue`, {
+    method: "POST",
+    body: JSON.stringify({ requested_stage: requestedStage }),
+  });
+}
+
+// Manual Intervention API
+export async function submitIntervention(
+  runId: string,
+  data: {
+    action: "OVERRIDE" | "REWORK" | "COMPLETE";
+    requested_stage?: string;
+    feedback?: string;
+  }
+): Promise<{ status: string; message: string }> {
+  return api<{ status: string; message: string }>(`/api/runs/${runId}/intervention`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
 // Health API
 export async function getHealth(): Promise<HealthStatus> {
   return api<HealthStatus>("/api/health");
@@ -158,23 +233,43 @@ export function subscribeToRunEvents(
   onEvent: (event: WorkflowEvent) => void,
   onError?: (err: Event) => void
 ): () => void {
-  const url = `/api/runs/${runId}/stream`;
+  const token = getToken();
+  const url = `/api/runs/${runId}/stream?token=${encodeURIComponent(token)}`;
   const eventSource = new EventSource(url);
+  let closed = false;
+  let lastErrorTime = 0;
 
-  eventSource.onmessage = (e) => {
+  const handleMessage = (e: MessageEvent) => {
     try {
       const data = JSON.parse(e.data);
-      onEvent(data);
+      if (data && (data.event_type || data.id || data.event_id)) {
+        onEvent(data as WorkflowEvent);
+        if (data.event_type === "PIPELINE_COMPLETED" || data.event_type === "PIPELINE_FAILED") {
+          closed = true;
+          eventSource.close();
+        }
+      }
     } catch {
       // heartbeats or comments
     }
   };
 
+  eventSource.onmessage = handleMessage;
+  eventSource.addEventListener("workflow", handleMessage as EventListener);
+
   eventSource.onerror = (e) => {
-    if (onError) onError(e);
+    if (closed) return;
+    const now = Date.now();
+    // Rate limit onError callbacks to at most once every 5 seconds
+    if (onError && now - lastErrorTime > 5000) {
+      lastErrorTime = now;
+      onError(e);
+    }
   };
 
   return () => {
+    closed = true;
+    eventSource.removeEventListener("workflow", handleMessage as EventListener);
     eventSource.close();
   };
 }

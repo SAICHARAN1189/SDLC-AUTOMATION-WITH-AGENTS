@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
 
 from backend.orchestration import nodes
+from backend.orchestration.checkpointing import get_checkpoint_saver
 from backend.orchestration.routing import (
     after_architecture,
     after_developer,
@@ -20,7 +20,6 @@ from backend.orchestration.state import ProjectState
 from backend.persistence import repositories
 from backend.models.schemas import new_id
 
-_memory = InMemorySaver()
 _compiled = None
 
 
@@ -72,7 +71,7 @@ def build_graph():
     )
     builder.add_edge("model_comparison_node", END)
     builder.add_edge("finalization_node", END)
-    return builder.compile(checkpointer=_memory)
+    return builder.compile(checkpointer=get_checkpoint_saver())
 
 
 def get_graph():
@@ -97,8 +96,13 @@ def invoke_workflow(state: dict[str, Any]) -> dict[str, Any]:
 def resume_workflow(run_id: str, updates: dict[str, Any] | None = None) -> dict[str, Any]:
     graph = get_graph()
     config = {"configurable": {"thread_id": run_id}}
-    snapshot = graph.get_state(config)
-    merged = dict(snapshot.values) if snapshot and snapshot.values else {}
+    merged: dict[str, Any] = {}
+    try:
+        snapshot = graph.get_state(config)
+        if snapshot and snapshot.values:
+            merged = dict(snapshot.values)
+    except Exception as exc:
+        logger.warning(f"Could not load state snapshot from graph: {exc}")
     if not merged:
         stored = repositories.latest_checkpoint(run_id)
         if stored:

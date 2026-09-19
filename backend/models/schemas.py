@@ -145,7 +145,7 @@ class WorkflowError(BaseModel):
 
 
 class RequirementsOutput(BaseModel):
-    project_summary: str
+    project_summary: str = Field(default="")
     stakeholders: List[str] = Field(default_factory=list)
     target_users: List[str] = Field(default_factory=list)
     functional_requirements: List[str] = Field(default_factory=list)
@@ -221,15 +221,15 @@ class CodeOutput(BaseModel):
 
 class Vulnerability(BaseModel):
     id: str = Field(default_factory=new_id)
-    category: str
-    severity: Literal["CRITICAL", "HIGH", "MEDIUM", "LOW"]
-    description: str
-    evidence: str
+    category: str = "security"
+    severity: Literal["CRITICAL", "HIGH", "MEDIUM", "LOW"] = "LOW"
+    description: str = ""
+    evidence: str = ""
     affected_file: Optional[str] = None
     affected_line: Optional[int] = None
-    remediation: str
+    remediation: str = ""
     confidence: float = 0.7
-    source: FindingSource
+    source: FindingSource = FindingSource.LLM_ANALYSIS
     caused_rework: bool = False
 
 
@@ -250,11 +250,20 @@ class SecurityOutput(BaseModel):
 
 
 class TestFailure(BaseModel):
-    test_name: str
+    test_name: str = ""
+    test: Optional[str] = None
     expected: Optional[str] = None
     actual: Optional[str] = None
+    root_cause: Optional[str] = None
+    affected_files: List[str] = Field(default_factory=list)
     stack_trace: Optional[str] = None
     affected_component: Optional[str] = None
+
+    def model_post_init(self, __context: Any) -> None:
+        if not self.test and self.test_name:
+            self.test = self.test_name
+        elif self.test and not self.test_name:
+            self.test_name = self.test
 
 
 class TestOutput(BaseModel):
@@ -270,6 +279,7 @@ class TestOutput(BaseModel):
     recommendations: List[str] = Field(default_factory=list)
     executed: bool = False
     overall_status: GateStatus = GateStatus.PENDING
+    severity: Optional[str] = None
 
 
 class ReviewFinding(BaseModel):

@@ -47,7 +47,7 @@ export const NewProject: React.FC = () => {
     "Build a secure online food delivery platform with customer ordering, driver real-time tracking, restaurant menu management, and strict payment card isolation."
   );
   const [executionMode, setExecutionMode] = useState<"AUTONOMOUS" | "STEP_BY_STEP">("AUTONOMOUS");
-  const [primaryModel, setPrimaryModel] = useState("groq/llama-3.3-70b-versatile");
+  const [primaryModel, setPrimaryModel] = useState("auto");
   const [securityMaxRetries, setSecurityMaxRetries] = useState(2);
   const [qaMaxRetries, setQaMaxRetries] = useState(2);
   const [reviewMaxRetries, setReviewMaxRetries] = useState(2);
@@ -237,9 +237,12 @@ export const NewProject: React.FC = () => {
                 onChange={(e) => setPrimaryModel(e.target.value)}
                 className="w-full px-2 py-1.5 rounded bg-[#0d1117] border border-[#30363d] text-zinc-200 text-xs focus:outline-none"
               >
-                <option value="groq/llama-3.3-70b-versatile">Groq Llama-3.3-70B</option>
-                <option value="groq/mixtral-8x7b-32768">Groq Mixtral-8x7B</option>
-                <option value="groq/llama-3.1-8b-instant">Groq Llama-3.1-8B (Fast)</option>
+                <option value="auto">Multi-Agent Model Router (Default / Specialized)</option>
+                <option value="gemini-3.8-flash">Google Gemini 3.8 Flash</option>
+                <option value="openai/gpt-oss-120b">Groq OpenAI GPT-OSS 120B</option>
+                <option value="openai/gpt-oss-20b">Groq OpenAI GPT-OSS 20B</option>
+                <option value="groq/compound">Groq Compound</option>
+                <option value="groq/compound-mini">Groq Compound Mini</option>
                 <option value="demo-deterministic">Demo Deterministic</option>
               </select>
             </div>

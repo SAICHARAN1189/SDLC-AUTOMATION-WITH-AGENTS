@@ -40,6 +40,45 @@ def create_app() -> Flask:
     app.register_blueprint(qa_bp)
     app.register_blueprint(review_bp)
     app.register_blueprint(models_bp)
+
+    @app.get("/")
+    def index():
+        return {
+            "status": "online",
+            "service": "SDLC Nexus Autonomous Multi-Agent Platform API",
+            "version": "2.0.0",
+            "frontend_url": "http://localhost:5173",
+            "health_check": "/api/health",
+        }
+
+    from backend.api.responses import fail
+    from backend.persistence.database import DatabaseConfigurationError, DatabaseConnectionError, check_database_health
+    from sqlalchemy.exc import IntegrityError, OperationalError
+
+    @app.errorhandler(DatabaseConfigurationError)
+    def handle_db_config_error(exc):
+        return fail("CONFIGURATION_ERROR", str(exc), status=500)
+
+    @app.errorhandler(DatabaseConnectionError)
+    def handle_db_conn_error(exc):
+        return fail("SERVICE_UNAVAILABLE", f"Database unavailable: {exc}", status=503)
+
+    @app.errorhandler(OperationalError)
+    def handle_db_operational_error(exc):
+        return fail("SERVICE_UNAVAILABLE", "Database connection failed or timed out", status=503)
+
+    @app.errorhandler(IntegrityError)
+    def handle_db_integrity_error(exc):
+        return fail("CONSTRAINT_VIOLATION", "Database constraint violation", status=400)
+
+    @app.get("/health")
+    def root_health():
+        db_healthy, _ = check_database_health()
+        return {
+            "backend": "healthy",
+            "database": "healthy" if db_healthy else "unavailable",
+        }
+
     init_db()
     return app
 
