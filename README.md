@@ -1,18 +1,18 @@
-# ⚡ SDLC Nexus: Autonomous Multi-Agent Software Engineering Platform
+# ⚡ SDLC Nexus: Autonomous Multi-Agent Software Engineering Operating System
 
 <div align="center">
 
 ![SDLC Nexus Platform](https://img.shields.io/badge/Platform-SDLC%20Nexus%20v1.0-emerald?style=for-the-badge&logo=nexus&logoColor=white)
-![LangGraph](https://img.shields.io/badge/Orchestration-LangGraph-059669?style=for-the-badge&logo=diagram-next&logoColor=white)
-![React 19](https://img.shields.io/badge/Frontend-React%2019%20%2B%20Vite-61DAFB?style=for-the-badge&logo=react&logoColor=black)
-![Flask](https://img.shields.io/badge/Backend-Python%20Flask%20REST-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![Supabase](https://img.shields.io/badge/Database-Supabase%20PostgreSQL-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
-![LLM Inference](https://img.shields.io/badge/Inference-Groq%20%7C%20Google%20Gemini-F55036?style=for-the-badge&logo=google&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
+![LangGraph Native](https://img.shields.io/badge/Orchestration-LangGraph%20Native-059669?style=for-the-badge&logo=diagram-next&logoColor=white)
+![React 19](https://img.shields.io/badge/Frontend-React%2019%20%2B%20Vite%20%2B%20Tailwind-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![Flask REST](https://img.shields.io/badge/Backend-Python%20Flask%20REST%20%2B%20SSE-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Supabase PostgreSQL](https://img.shields.io/badge/Database-Supabase%20PostgreSQL-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
+![Multi-LLM](https://img.shields.io/badge/Inference-Google%20Gemini%20%7C%20Groq%20Llama%203.3-F55036?style=for-the-badge&logo=google&logoColor=white)
+![License MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
 
 <p align="center">
-  <b>An enterprise-grade, state-of-the-art autonomous multi-agent software engineering operating system.</b><br/>
-  Orchestrates collaborative specialized AI agents to translate natural language ideas into production-ready software with continuous security AST scans, sandboxed test suites, interactive terminal logs, and resilient PostgreSQL state persistence.
+  <b>A production-grade, state-of-the-art autonomous multi-agent software engineering operating system.</b><br/>
+  Orchestrates collaborative specialized AI agents to translate natural language ideas into production-ready software with continuous security AST scans, sandboxed Pytest execution, human-in-the-loop manual intervention, interactive terminal logs, and resilient Supabase PostgreSQL persistence.
 </p>
 
 </div>
@@ -21,57 +21,69 @@
 
 ## 📑 Table of Contents
 
-- [🌟 Architectural Vision](#-architectural-vision)
+- [🌟 Architectural Vision & Highlights](#-architectural-vision--highlights)
 - [🤖 The Autonomous Agent Collective](#-the-autonomous-agent-collective)
 - [🔄 LangGraph Multi-Agent Orchestration Flow](#-langgraph-multi-agent-orchestration-flow)
-- [🛡️ Hybrid Security & Vulnerability Center](#️-hybrid-security--vulnerability-center)
-- [🧪 QA Testing & Terminal Execution Sandbox](#-qa-testing--terminal-execution-sandbox)
+  - [LangGraph State Machine Contract](#langgraph-state-machine-contract)
+  - [Automated Rework Loops & Telemetry](#automated-rework-loops--telemetry)
+- [📁 Project Architecture & Directory Layout](#-project-architecture--directory-layout)
+- [🛡️ Hybrid Security & Vulnerability Center (Central + Project-Wise)](#️-hybrid-security--vulnerability-center-central--project-wise)
+  - [Central Workspace Mode ("All Projects")](#central-workspace-mode-all-projects)
+  - [Project-Scoped & Run-Scoped Audit Drilldown](#project-scoped--run-scoped-audit-drilldown)
+  - [Deterministic AST Sinks & CWE Classification](#deterministic-ast-sinks--cwe-classification)
+- [🧪 QA Testing & Interactive Terminal Execution Runner](#-qa-testing--interactive-terminal-execution-runner)
+- [🛑 Human-In-The-Loop (HITL) Manual Intervention](#-human-in-the-loop-hitl-manual-intervention)
 - [📦 Artifact Explorer & Project Deliverables](#-artifact-explorer--project-deliverables)
-- [🗄️ Database & Persistence Architecture (Supabase PostgreSQL)](#️-database--persistence-architecture-supabase-postgresql)
-- [🧠 Model Router & Multi-LLM Resilience](#-model-router--multi-llm-resilience)
-- [🚀 Getting Started](#-getting-started)
+- [🗄️ Database Schema & Persistence Architecture (Supabase PostgreSQL)](#️-database-schema--persistence-architecture-supabase-postgresql)
+  - [Entity Relationship Diagram](#entity-relationship-diagram)
+  - [Sub-Millisecond Composite Indexing](#sub-millisecond-composite-indexing)
+  - [PostgreSQL LangGraph Checkpointing](#postgresql-langgraph-checkpointing)
+- [🧠 Model Router, Context Pruning & Resilience](#-model-router-context-pruning--resilience)
+- [🔬 Model Lab & Benchmarking Suite](#-model-lab--benchmarking-suite)
+- [⚙️ Environment Configuration Reference](#️-environment-configuration-reference)
+- [🚀 Quick Start Guide](#-quick-start-guide)
   - [Prerequisites](#prerequisites)
-  - [Environment Configuration](#environment-configuration)
   - [Backend Setup](#backend-setup)
   - [Frontend Setup](#frontend-setup)
-- [📡 API Architecture & Endpoints](#-api-architecture--endpoints)
-- [🧪 Verification & Testing](#-verification--testing)
-- [📄 License](#-license)
+- [📡 Complete API Reference](#-complete-api-reference)
+- [🧪 Automated Test Suites](#-automated-test-suites)
+- [📚 Deep-Dive Technical Documentation](#-deep-dive-technical-documentation)
+- [📄 License & Authors](#-license--authors)
 
 ---
 
-## 🌟 Architectural Vision
+## 🌟 Architectural Vision & Highlights
 
-SDLC Nexus is not a simple code-generation wrapper. It is an **autonomous software engineering organization** modeled as a directed acyclic graph (DAG) of specialized engineering roles. 
+SDLC Nexus replaces disjointed, single-prompt AI code generation with an **autonomous software engineering organization** modeled as a stateful, cyclic directed graph on **LangGraph**:
 
-Traditional AI assistants generate disjointed snippets without validating security or test contracts. SDLC Nexus bridges this gap through **deterministic gate enforcement**, **collaborative inter-agent feedback loops**, and **human-in-the-loop manual intervention**:
-
-1. **Stateful Checkpointing**: Every stage transition, agent message, and generated artifact is persisted to **Supabase PostgreSQL** via SQLAlchemy with high-concurrency connection pooling.
-2. **Deterministic & Semantic Verification**: Code generated by the Developer Agent must survive deterministic AST security scans and sandboxed Pytest executions before moving to senior architectural review.
-3. **Automated Rework Loops**: If the Security Agent detects dangerous sinks (e.g. raw SQL string interpolation, hardcoded secrets, XSS sinks) or the QA Agent detects test failures, an automated rework loop is triggered, feeding structured remediation telemetry back to the Developer Agent.
-4. **Human-In-The-Loop (HITL) Intervention**: When rework thresholds are exceeded, the system enters `MANUAL_INTERVENTION_REQUIRED` mode. Engineers can inspect live diffs, supply custom instructions, directly edit code, or approve gate overrides.
+1. **True Supabase PostgreSQL Persistence**: All projects, pipeline runs, LangGraph checkpoints, chronological event logs, AST security findings, test outputs, and review sign-offs persist directly in Supabase PostgreSQL with pooled connections and composite indexing. Zero volatile-only states.
+2. **Deterministic & Semantic Guardrails**: Code generated by Developer Agent is rigorously verified through deterministic AST pattern matchers (SQL injection, XSS sinks, hardcoded secrets) and sandboxed Pytest runners before reaching senior code review.
+3. **Automated Rework Loops with Telemetry**: When security vulnerabilities or test failures are detected, the workflow automatically generates structured telemetry messages (`SECURITY_FEEDBACK`, `QA_FEEDBACK`) and routes them back to the Developer Agent for automated refactoring.
+4. **Human-In-The-Loop (HITL) Intervention**: When rework limits are reached, the workflow halts safely on `MANUAL_INTERVENTION_REQUIRED`. Engineers can provide custom steering prompts, directly edit code files in an in-browser editor, or override gates with instant optimistic UI feedback.
+5. **Real-Time Token & State Streaming**: Server-Sent Events (SSE) pipe live agent reasoning tokens, status transitions, and inter-agent communications directly into an interactive React 19 visual canvas.
+6. **Zero Mock Data Guarantee**: The platform features zero hardcoded mock findings across Security, QA, and Artifacts. Every metric, traceback, sink, and deliverable is fetched dynamically from live Supabase tables.
 
 ---
 
 ## 🤖 The Autonomous Agent Collective
 
-Each agent in SDLC Nexus possesses a strict identity, structured system instructions, input/output Pydantic schemas, and tool access:
+Each agent in SDLC Nexus possesses an isolated engineering persona, typed Pydantic contracts, deterministic tools, and dynamic model allocation:
 
-| Agent Identity | Role | Goal & Outputs | Tools & Models |
+| Agent Identity | Role & Persona | Primary Goal & Outputs | Default Model Slot |
 | :--- | :--- | :--- | :--- |
-| **📋 Requirements Agent** (`requirements_agent`) | Requirements Analyst | Produces comprehensive PRDs, user stories (`US-1..N`), acceptance criteria, non-functional requirements, constraints, and risks. | Pydantic Schema, Gemini 2.5 Flash / Groq |
-| **🏛️ System Architect** (`architecture_agent`) | Principal System Architect | Designs system architecture, selects frontend/backend/database stacks, module boundaries, API contracts, and scalability strategy. | Schema Validator, Gemini 2.5 Flash |
-| **🎨 Visual Architect** (`visual_architecture_agent`) | Technical Illustrator | Generates live, renderable Mermaid.js C4 diagrams, system data flows, and ER diagrams with automated syntax validation. | Mermaid.js Validator, Deterministic Regex |
-| **💻 Developer Agent** (`developer_agent`) | Senior Full-Stack Engineer | Generates modular project structures, source files, dependency manifests, and environment configurations. Handles iterative rework. | AST Parser, File Generator |
-| **🛡️ Security Agent** (`security_agent`) | Application Security Lead | Performs dual-layer static analysis: deterministic regex/AST sink checks + LLM semantic threat assessment. Flags rework or halts builds. | AST Pattern Matcher, CWE Classifier |
-| **🧪 QA Test Agent** (`qa_agent`) | Quality Assurance Engineer | Generates unit/integration test suites, runs sandboxed Pytest executions, parses stack traces, and measures branch coverage. | Sandboxed Pytest Runner, Subprocess Sandbox |
-| **🔍 Code Review Agent** (`review_agent`) | Staff Review Architect | Evaluates architectural conformance, code quality, and security remediations to grant formal sign-off. | Architectural Gate Validator |
+| **📋 Requirements Analyst** (`requirements_agent`) | Senior Business Analyst / PM | Generates complete Product Requirements Documents (PRDs), numbered user stories (`US-1..N`) with role/goal/benefit breakdown, acceptance criteria, non-functional requirements, and risk registries. | Primary (`gemini-2.5-flash`) |
+| **🏛️ System Architect** (`architecture_agent`) | Principal System Architect | Designs system architecture specifications, frontend/backend tech stacks, database models, modular boundaries, and REST API endpoint contracts. | Reasoning (`gemini-2.5-flash` / `gpt-oss-120b`) |
+| **🎨 Visual Architect** (`visual_architecture_agent`) | Technical Systems Illustrator | Generates live, renderable Mermaid.js diagrams (C4 system architecture, sequence diagrams, and database ER models) with automated syntax validation. | Reasoning (`gemini-2.5-flash`) |
+| **💻 Developer Agent** (`developer_agent`) | Senior Full-Stack Engineer | Generates modular codebase structures, full-stack source files, dependency manifests, and environment configs. Executes targeted rework cycles when receiving feedback. | Primary / Fast (`gemini-2.5-flash` / `llama-3.3-70b`) |
+| **🛡️ Security Lead** (`security_agent`) | Application Security Lead | Performs dual-layer static analysis: deterministic AST pattern scanning + LLM semantic threat assessment. Flags CWE categories and triggers security rework. | Primary / Reasoning (`gemini-2.5-flash`) |
+| **🧪 QA Engineer** (`qa_agent`) | Quality Assurance Engineer | Synthesizes automated Pytest test suites, executes them in an isolated subprocess sandbox, parses tracebacks, and measures branch coverage. | Fast / Reasoning (`gemini-2.5-flash`) |
+| **🔍 Review Architect** (`review_agent`) | Staff Review Architect | Evaluates architectural consistency, separation of concerns, and security remediations to grant formal sign-off (`APPROVED` or `NEEDS_REWORK`). | Reasoning (`gemini-2.5-flash`) |
 
 ---
 
 ## 🔄 LangGraph Multi-Agent Orchestration Flow
 
-The execution workflow is modeled as a cyclic state graph in `backend/orchestration/graph.py`:
+The pipeline is implemented as a stateful cyclic graph in `backend/orchestration/graph.py`:
 
 ```mermaid
 flowchart TD
@@ -85,15 +97,15 @@ flowchart TD
     SEC -- "Vulnerabilities Found (Retry < Max)" --> SEC_REWORK[Security Rework Signal]
     SEC_REWORK --> DEV
     
-    SEC -- "Retry Limit Exceeded" --> HITL_SEC[⚠️ Manual Intervention: Security]
+    SEC -- "Retry Threshold Reached" --> HITL_SEC[⚠️ Manual Intervention: Security]
     HITL_SEC --> DEV
     
-    SEC -- "Security Passed" --> QA{QA Execution Gate}
+    SEC -- "Security Passed (0 Critical/High)" --> QA{QA Execution Gate}
     
     QA -- "Test Failures (Retry < Max)" --> QA_REWORK[QA Rework Signal]
     QA_REWORK --> DEV
     
-    QA -- "Retry Limit Exceeded" --> HITL_QA[⚠️ Manual Intervention: QA]
+    QA -- "Retry Threshold Reached" --> HITL_QA[⚠️ Manual Intervention: QA]
     HITL_QA --> DEV
     
     QA -- "All Tests Passed" --> REV{Review Sign-Off Gate}
@@ -114,42 +126,185 @@ flowchart TD
     class FINALIZE finish;
 ```
 
+### LangGraph State Machine Contract
+
+The graph passes a typed `AgentState` (`backend/orchestration/state.py`) through each node and conditional edge:
+
+```python
+class AgentState(TypedDict):
+    project_id: str
+    run_id: str
+    user_id: str
+    execution_mode: str  # "autonomous" | "step_by_step"
+    current_stage: str
+    messages: Annotated[list[BaseMessage], add_messages]
+    
+    # Generated deliverables
+    prd: Optional[dict]
+    architecture_spec: Optional[dict]
+    diagrams: Optional[dict]
+    codebase: Optional[dict]
+    security_report: Optional[dict]
+    test_results: Optional[dict]
+    review_signoff: Optional[dict]
+    
+    # Quality & Rework Gates
+    rework_count: int
+    max_rework_cycles: int
+    security_rework_requested: bool
+    qa_rework_requested: bool
+    review_rework_requested: bool
+    manual_intervention_required: bool
+    intervention_reason: Optional[str]
+```
+
+### Automated Rework Loops & Telemetry
+
+When `security_agent` detects unmitigated high/critical findings or `qa_agent` reports failing Pytest assertions, the graph evaluates dynamic conditional edges:
+- **`should_continue_security`**: If `rework_count < max_rework_cycles` and high/critical findings exist, appends a structured telemetry feedback packet to state and re-invokes `developer_agent`.
+- **`should_continue_qa`**: If `rework_count < max_rework_cycles` and test failures occur, generates failure comparison telemetry (Expected vs. Actual + Stack Trace) and re-invokes `developer_agent`.
+- **Threshold Tripping**: If `rework_count >= max_rework_cycles`, state flips `manual_intervention_required = True`, halts the background runner, and notifies the frontend via SSE.
+
 ---
 
-## 🛡️ Hybrid Security & Vulnerability Center
+## 📁 Project Architecture & Directory Layout
 
-The **Security & Vulnerability Center** (`/security`) provides an enterprise security posture management portal:
-
-- **Central Mode ("All Projects")**: 
-  - Aggregates portfolio metrics across all projects stored in Supabase PostgreSQL.
-  - Displays total pipeline scans, global critical/high/medium vulnerability distribution, and cross-project audit tables.
-  - Project Security Health breakdown table showing status (`PASS` / `WARNING` / `FAIL`), scan counts, and last audit dates.
-- **Project-Wise & Run-Wise Drilldown**:
-  - Filter by any specific project (e.g., *Nexus Secure Food Delivery*, *Calculator*, etc.) and specific pipeline run.
-  - Displays discovered vulnerability sinks, exact affected lines (`file:line`), raw code evidence, confidence ratings, and prescribed remediation steps.
-  - Direct deep linking into the **Artifact Explorer** for the relevant run.
-- **100% Real PostgreSQL Telemetry**: Completely eliminates mock data; all findings are real records populated by deterministic scanners and LLM threat reasoning.
+```
+SDLC-AUTOMATION-WITH-AGENTS/
+├── backend/
+│   ├── agents/                     # 7 Autonomous Engineering Agents
+│   │   ├── requirements_agent.py   # PRD generation & user story decomposition
+│   │   ├── architecture_agent.py   # Tech stack, DB schema & API contracts
+│   │   ├── visual_architecture_agent.py # Renderable Mermaid.js diagrams
+│   │   ├── developer_agent.py      # Modular codebase synthesis & targeted refactoring
+│   │   ├── security_agent.py       # Deterministic AST pattern scanner & threat scoring
+│   │   ├── qa_agent.py             # Pytest suite synthesis & subprocess runner
+│   │   └── review_agent.py         # Architectural & security sign-off auditor
+│   ├── api/                        # Flask Blueprints & REST Endpoints
+│   │   ├── projects.py             # Project CRUD & run initiation
+│   │   ├── runs.py                 # Run status, HITL intervention & lifecycle
+│   │   ├── security.py             # Central & run-scoped security findings
+│   │   ├── qa.py                   # Pytest execution telemetry & test outputs
+│   │   ├── review.py               # Review sign-off details
+│   │   ├── artifacts.py            # Artifact bundle retrieval & exports
+│   │   ├── models.py               # Model Lab benchmark endpoint
+│   │   └── sse.py                  # Server-Sent Events live streaming
+│   ├── config/                     # Application settings & environment parsing
+│   ├── llm/                        # Multi-Provider Inference Layer
+│   │   ├── router.py               # Dynamic model router (Primary, Fast, Reasoning)
+│   │   ├── context.py              # Sliding-window context management & token pruning
+│   │   ├── gemini_client.py        # Google Gemini 2.5 Flash / 1.5 Pro client
+│   │   └── groq_client.py          # Groq Llama 3.3 / GPT-OSS inference client
+│   ├── orchestration/              # LangGraph Execution Engine
+│   │   ├── graph.py                # StateGraph assembly & conditional edge routing
+│   │   ├── nodes.py                # Agent execution nodes & prompt dispatchers
+│   │   ├── state.py                # Typed AgentState schema
+│   │   ├── runner.py               # Threaded background pipeline runner
+│   │   └── checkpointing.py        # Supabase PostgreSQL LangGraph checkpointer
+│   ├── persistence/                # Database Access Layer
+│   │   ├── database.py             # SQLAlchemy 2.0 engine & connection pool
+│   │   └── repositories.py         # Sub-millisecond composite-indexed repository queries
+│   ├── tools/                      # Deterministic Agent Tooling
+│   │   ├── security_scanner.py     # Python AST vulnerability sink matcher
+│   │   ├── test_execution.py       # Isolated Pytest subprocess sandbox
+│   │   ├── mermaid_validator.py    # Syntax validator for live Mermaid diagrams
+│   │   └── file_tools.py           # Codebase disk & memory file utilities
+│   └── tests/                      # Automated Test Suite (Pytest)
+├── frontend/                       # React 19 Single Page Application
+│   ├── src/
+│   │   ├── components/             # Reusable UI Components
+│   │   │   ├── agents/             # Agent inspector & status cards
+│   │   │   ├── artifacts/          # Mermaid viewer & code viewer
+│   │   │   ├── workflow/           # Visual canvas, stage nodes & communication stream
+│   │   │   └── layout/             # Top navbar & sidebar navigation
+│   │   ├── pages/                  # Top-Level Route Views
+│   │   │   ├── Dashboard.tsx       # System health, recent runs & quick launch
+│   │   │   ├── Projects.tsx        # Project catalog with status filters
+│   │   │   ├── NewProject.tsx      # Project wizard with prompt presets
+│   │   │   ├── LiveRun.tsx         # Real-time visual canvas & HITL intervention modal
+│   │   │   ├── SecurityCenter.tsx  # Central & project-wise vulnerability dashboard
+│   │   │   ├── QACenter.tsx        # Pytest Terminal Console & test results
+│   │   │   ├── Artifacts.tsx       # Complete deliverable viewer (PRD, Spec, Code, Tests)
+│   │   │   ├── ReviewCenter.tsx    # Architectural consistency & sign-off
+│   │   │   └── ModelLab.tsx        # Multi-LLM latency & code quality benchmark
+│   │   └── services/               # API clients & SSE event source handling
+└── docs/                           # Extended Technical Deep-Dives
+```
 
 ---
 
-## 🧪 QA Testing & Terminal Execution Sandbox
+## 🛡️ Hybrid Security & Vulnerability Center (Central + Project-Wise)
 
-The **QA Testing Center** (`/qa`) and Artifact Explorer Test Tab feature an interactive, developer-focused terminal viewer:
+Accessible at `/security`, the Security & Vulnerability Center acts as both an enterprise security posture overview and a project-specific audit tool:
 
-- **Interactive Terminal Console**: Renders live `pytest --tb=short runner` output in an authentic terminal viewer with macOS/Linux control dots, syntax-highlighted error lines in red, passed assertions in emerald, and a one-click **Copy Log** button.
-- **Structured Failure Cards**: Breaks down test failures into clear comparison tiles contrasting **Expected** vs. **Actual** values with collapsible syntax-highlighted stack traces.
+### Central Workspace Mode ("All Projects")
+- **Cross-Project Posture**: Aggregates live security audit telemetry across every project stored in Supabase PostgreSQL.
+- **Enterprise Metrics**: Total Projects Monitored, Scans Executed, Critical/High/Medium Findings, and Automated Remediations.
+- **Monitored Projects Health Table**: Displays status badges (`PASS` / `WARNING` / `FAIL`), scan volume, breakdown counts, and last audit dates with an instant **Inspect** action.
+- **Discovered AST Sinks**: Cross-project vulnerability sink feed tagged with project name, severity, category, and code location.
+
+### Project-Scoped & Run-Scoped Audit Drilldown
+- **Targeted Inspection**: Filter by any specific project (e.g. *Nexus Secure Food Delivery*, *advanced-calculator*) and specific pipeline run.
+- **File & Line Precision**: Displays exact affected files, line numbers (`file:line`), and code snippets.
+- **Deep-Linking**: Direct links into the **Artifact Explorer** for the relevant run.
+- **Zero Mock Data**: 100% powered by real records in the Supabase `security_findings` table.
+
+### Deterministic AST Sinks & CWE Classification
+
+The `security_scanner.py` tool uses Python's `ast` library to identify unsafe patterns deterministically:
+
+| CWE ID | Vulnerability Class | AST Detection Signature | Automated Remediation |
+| :--- | :--- | :--- | :--- |
+| **CWE-89** | SQL Injection | `cursor.execute(f"...{var}...")` or `%` string format | Converted to parameterized queries (`execute("... WHERE id = %s", (var,))`) |
+| **CWE-79** | Cross-Site Scripting (XSS) | `render_template_string(f"...{user_input}...")` | Enforce auto-escaping Jinja2 templates or sanitization with `bleach` |
+| **CWE-78** | OS Command Injection | `subprocess.Popen(..., shell=True)` with user variables | Set `shell=False` and pass arguments as structured lists |
+| **CWE-798** | Hardcoded Secrets | Regex matches for API keys, bearer tokens, passwords | Move secrets to environment variables via `os.environ.get()` |
+
+---
+
+## 🧪 QA Testing & Interactive Terminal Execution Runner
+
+The **QA Center** (`/qa`) and Artifact Explorer Test Suites tab feature a developer-first terminal interface:
+
+- **Pytest Terminal Console (`pytest --tb=short runner`)**:
+  - Dark terminal styling with macOS/Linux control dots.
+  - ANSI syntax highlighting: emerald for `PASSED`, rose/red for `FAILED` and `ERROR`, amber for warnings.
+  - One-click **Copy Log** button for instant debugging sharing.
+  - Preserved line breaks and short tracebacks for rapid inspection.
+- **Structured Failure Analysis**: Breaks down Pytest exceptions into comparison cards contrasting **Expected** vs. **Actual** outcomes with collapsible stack traces.
 - **Generated Test Inspection**: Complete code viewer for auto-generated test suites (`tests/test_api.py`, etc.) with syntax highlighting.
+- **Subprocess Sandbox**: Runs tests inside a dedicated temporary environment with execution timeouts to prevent hang-ups or denial of service.
+
+---
+
+## 🛑 Human-In-The-Loop (HITL) Manual Intervention
+
+When automated rework cannot resolve a security vulnerability or test failure within the configured retry limit, SDLC Nexus safely pauses execution and transfers control to the human engineer:
+
+```
+[Agent Rework Limit Exceeded] ──► [Pipeline Enters MANUAL_INTERVENTION_REQUIRED]
+                                                   │
+         ┌─────────────────────────────────────────┴─────────────────────────────────────────┐
+         ▼                                         ▼                                         ▼
+[Resume / Gate Override]               [Trigger Guided Rework]                     [Direct Code Editing]
+Bypasses gate to next stage            Sends prompt to Developer Agent             Edit source files in UI
+```
+
+1. **Gate Override**: Bypasses the failing gate and resumes execution to the next stage (e.g., bypass QA to proceed to Review).
+2. **Guided Natural Language Steering**: Provide custom instructions (e.g., *"Refactor the order endpoint to use SQLAlchemy parameterized queries instead of string concatenation"*), which gets injected into the Developer Agent's next prompt.
+3. **In-Browser Code File Editor**: Select any generated file, view current code, make precise manual corrections, and submit changes back to the pipeline.
+4. **Optimistic UI Updates**: Immediate feedback in the browser prevents buttons from sticking or freezing while state commits.
 
 ---
 
 ## 📦 Artifact Explorer & Project Deliverables
 
-Accessible via `/artifacts?run_id=<run_id>`, the Artifact Explorer is a comprehensive inspection suite for project deliverables:
+Accessible via `/artifacts?run_id=<run_id>`, the Artifact Explorer packages all pipeline outputs into a unified workspace:
 
-1. **Requirements PRD**: Formatted project overview, functional/non-functional requirements, user stories (`US-1`, `US-2`, etc.) with role, goal, and benefit breakdown, acceptance criteria, and risks.
-2. **Architecture Spec**: Modular architecture style, frontend stack, backend stack, database selection, authentication/authorization model, modules, and API endpoints.
-3. **Mermaid Diagrams**: Interactive visual architecture diagrams rendered dynamically via Mermaid.js (flowcharts, sequence diagrams, ER diagrams).
-4. **Generated Codebase**: Interactive file tree with full-screen syntax-highlighted code viewer, dependency badges, and quick copy actions.
+1. **Requirements PRD**: Formatted project summary, functional/non-functional requirements, user stories (`US-1..N`) with role, goal, and benefit breakdown, acceptance criteria, and risks.
+2. **Architecture Spec**: Architecture style, frontend stack, backend stack, database selection, auth model, modules, and API contracts.
+3. **Mermaid Diagrams**: Interactive visual architecture diagrams rendered dynamically via Mermaid.js (system flowcharts, sequence diagrams, ER models) with zoom and pan.
+4. **Generated Codebase**: Interactive file tree with full-screen syntax-highlighted code viewer, dependency manifests, and quick copy actions.
 5. **Security Report**: Audit breakdown by severity, CWE category, sink location, and automated remediation actions.
 6. **Test Suites**: Pytest summary, execution duration, test coverage percentage, and interactive terminal logs.
 7. **Review Sign-Off**: Senior engineering gate review, architectural consistency analysis, and formal approval status.
@@ -157,33 +312,95 @@ Accessible via `/artifacts?run_id=<run_id>`, the Artifact Explorer is a comprehe
 
 ---
 
-## 🗄️ Database & Persistence Architecture (Supabase PostgreSQL)
+## 🗄️ Database Schema & Persistence Architecture (Supabase PostgreSQL)
 
-SDLC Nexus uses **Supabase PostgreSQL** for its persistence layer:
+SDLC Nexus is backed by **Supabase PostgreSQL** via SQLAlchemy 2.0 with connection pooling:
 
+### Entity Relationship Diagram
+
+```mermaid
+erDiagram
+    PROJECTS ||--o{ PIPELINE_RUNS : contains
+    PIPELINE_RUNS ||--o{ WORKFLOW_EVENTS : emits
+    PIPELINE_RUNS ||--o{ WORKFLOW_CHECKPOINTS : snapshots
+    PIPELINE_RUNS ||--o{ ARTIFACTS : produces
+    PIPELINE_RUNS ||--o{ SECURITY_FINDINGS : detects
+    PIPELINE_RUNS ||--o{ TEST_RESULTS : records
+    PIPELINE_RUNS ||--o{ REVIEW_RESULTS : signs_off
+
+    PROJECTS {
+        string id PK
+        string user_id
+        string name
+        text idea
+        string status
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    PIPELINE_RUNS {
+        string id PK
+        string project_id FK
+        string user_id
+        string execution_mode
+        string status
+        string current_stage
+        timestamp started_at
+        timestamp completed_at
+        text error_message
+        jsonb config_json
+        int rework_count
+    }
+
+    SECURITY_FINDINGS {
+        string id PK
+        string run_id FK
+        string category
+        string severity
+        text description
+        text evidence
+        text remediation
+        string affected_file
+        int affected_line
+        string status
+        string source
+        bool caused_rework
+    }
+
+    ARTIFACTS {
+        string id PK
+        string run_id FK
+        string artifact_type
+        string title
+        text content
+        jsonb metadata_json
+        timestamp created_at
+    }
+
+    WORKFLOW_EVENTS {
+        string id PK
+        string run_id FK
+        string event_type
+        string stage
+        string agent
+        text message
+        jsonb data
+        timestamp timestamp
+    }
+
+    WORKFLOW_CHECKPOINTS {
+        string id PK
+        string run_id FK
+        string stage
+        int step_index
+        jsonb state_dump
+        timestamp created_at
+    }
 ```
-[SDLC Nexus Flask Backend]
-         │
-         │ SQLAlchemy ORM (pool_size=10, max_overflow=20)
-         ▼
-[Supabase PgBouncer Pooler :6543]
-         ▼
-┌────────────────────────────────────────────────────────┐
-│               Supabase PostgreSQL Schema               │
-├──────────────────────────┬─────────────────────────────┤
-│ projects                 │ Core project definitions    │
-│ pipeline_runs            │ Run execution states & modes│
-│ workflow_events          │ Chronological SSE event logs│
-│ workflow_checkpoints     │ LangGraph memory snapshots  │
-│ artifacts                │ Structured agent deliverables│
-│ security_findings        │ Discovered AST sinks & vulns│
-│ test_results             │ Pytest run metrics & output │
-│ review_results           │ Senior review sign-offs     │
-└──────────────────────────┴─────────────────────────────┘
-```
 
-### High-Performance Indexing
-The schema includes composite indexes to ensure queries resolve in sub-millisecond execution times even with large event histories:
+### Sub-Millisecond Composite Indexing
+
+To guarantee sub-millisecond query execution on dashboards with large event streams, the schema maintains composite indexes:
 - `idx_projects_user_created` on `projects(user_id, created_at DESC)`
 - `idx_runs_project_started` on `pipeline_runs(project_id, started_at DESC)`
 - `idx_workflow_events_run_time` on `workflow_events(run_id, timestamp ASC)`
@@ -191,20 +408,58 @@ The schema includes composite indexes to ensure queries resolve in sub-milliseco
 - `idx_artifacts_run_type` on `artifacts(run_id, artifact_type)`
 - `idx_security_findings_run_sev` on `security_findings(run_id, severity)`
 
+### PostgreSQL LangGraph Checkpointing
+
+The custom `PostgresCheckpointSaver` (`backend/orchestration/checkpointing.py`) serializes the LangGraph memory state at each node transition directly into the `workflow_checkpoints` table. If the backend restarts or a run is paused for manual intervention, the pipeline resumes without data loss.
+
 ---
 
-## 🧠 Model Router & Multi-LLM Resilience
+## 🧠 Model Router, Context Pruning & Resilience
 
-SDLC Nexus includes an autonomous Model Router (`backend/llm/router.py`) that matches agent task complexities to optimal models:
+SDLC Nexus features an intelligent Model Router (`backend/llm/router.py`) that matches agent task complexities to optimal models:
 
 - **Primary Provider**: Google Gemini (`gemini-2.5-flash` / `gemini-1.5-pro`) for high-speed, cost-effective reasoning.
 - **Secondary Provider**: Groq (`openai/gpt-oss-120b`, `llama-3.3-70b-versatile`, `llama-3.1-8b-instant`) for ultrafast token generation and benchmark comparison.
 - **Automatic Fallback Policy**: If a primary provider encounters rate limits or upstream timeouts, the router transparently retries requests against secondary fallback slots without dropping pipeline state.
-- **Model Lab (`/models`)**: Interactive benchmarker that runs side-by-side completions across configured providers, recording latency (ms), token volume, and engineering suitability scores.
+- **Context Pruning & Sliding Windows**: Long agent message trajectories are pruned dynamically using token-aware sliding windows (`backend/llm/context.py`), preventing context overflow errors during extended rework loops.
 
 ---
 
-## 🚀 Getting Started
+## 🔬 Model Lab & Benchmarking Suite
+
+Accessible via `/models`, the **Model Lab** provides a side-by-side benchmarking suite for multi-model evaluation:
+- Run concurrent engineering prompts across Gemini and Groq models.
+- Measure latency (milliseconds), token generation throughput, and response length.
+- Evaluate structural engineering heuristic scores (JSON validity, schema compliance, code quality).
+
+---
+
+## ⚙️ Environment Configuration Reference
+
+| Environment Variable | Required | Default Value | Description |
+| :--- | :---: | :--- | :--- |
+| `LLM_PROVIDER` | Yes | `gemini` | Primary inference provider (`gemini` or `groq`) |
+| `ENABLE_LLM_FALLBACK` | No | `false` | Enable automatic failover to secondary provider on quota errors |
+| `GEMINI_API_KEY` | Yes* | - | Google AI Studio Gemini API Key |
+| `GEMINI_MODEL` | No | `gemini-2.5-flash` | Gemini model name |
+| `GROQ_API_KEY` | Yes* | - | Groq Cloud API Key |
+| `GROQ_MODEL` | No | `openai/gpt-oss-120b` | Default Groq model |
+| `PRIMARY_MODEL` | No | `gemini-2.5-flash` | Model assigned to requirements and developer agents |
+| `FAST_MODEL` | No | `gemini-2.5-flash` | Model assigned to speed-critical tasks (QA tests) |
+| `REASONING_MODEL` | No | `gemini-2.5-flash` | Model assigned to architecture, security, and review |
+| `DATABASE_URL` | Yes | - | Supabase PostgreSQL URI (port 6543 pooler recommended) |
+| `DB_POOL_SIZE` | No | `10` | SQLAlchemy connection pool size |
+| `DB_MAX_OVERFLOW` | No | `20` | SQLAlchemy max overflow connections |
+| `DB_POOL_RECYCLE` | No | `1800` | Connection recycle period in seconds |
+| `DB_CONNECT_TIMEOUT` | No | `10` | Connection timeout in seconds |
+| `DEMO_MODE` | No | `false` | Enable mock agent data (disable for real AI inference) |
+| `SECRET_KEY` | Yes | - | Secret key used for session cryptographic signatures |
+
+*\* At least one LLM provider key (`GEMINI_API_KEY` or `GROQ_API_KEY`) is required.*
+
+---
+
+## 🚀 Quick Start Guide
 
 ### Prerequisites
 - **Python 3.11+**
@@ -214,62 +469,15 @@ SDLC Nexus includes an autonomous Model Router (`backend/llm/router.py`) that ma
 
 ---
 
-### Environment Configuration
+### Backend Setup
 
-1. Clone the repository:
+1. **Clone the repository**:
    ```bash
    git clone https://github.com/SAICHARAN1189/SDLC-AUTOMATION-WITH-AGENTS.git
    cd SDLC-AUTOMATION-WITH-AGENTS
    ```
 
-2. Copy the example environment file:
-   ```bash
-   cp .env.example .env
-   ```
-
-3. Configure `.env` with your credentials:
-   ```env
-   # LLM Provider Configuration
-   LLM_PROVIDER=gemini
-   ENABLE_LLM_FALLBACK=false
-
-   # Google Gemini
-   GEMINI_API_KEY=your_gemini_api_key_here
-   GEMINI_MODEL=gemini-2.5-flash
-
-   # Groq (Secondary / Model Lab)
-   GROQ_API_KEY=your_groq_api_key_here
-   GROQ_MODEL=openai/gpt-oss-120b
-
-   # Model Slots
-   PRIMARY_MODEL=gemini-2.5-flash
-   FAST_MODEL=gemini-2.5-flash
-   REASONING_MODEL=gemini-2.5-flash
-   COMPARISON_MODELS=gemini-2.5-flash,openai/gpt-oss-120b,openai/gpt-oss-20b
-
-   # Supabase Credentials
-   SUPABASE_URL=https://your-project.supabase.co
-   SUPABASE_ANON_KEY=your_anon_key
-   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-
-   # Supabase PostgreSQL Database URL (Transaction Pooler port 6543 recommended)
-   DATABASE_URL=postgresql://postgres.your-ref:your-password@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres?sslmode=require
-   DB_POOL_SIZE=10
-   DB_MAX_OVERFLOW=20
-   DB_POOL_RECYCLE=1800
-   DB_CONNECT_TIMEOUT=10
-
-   # Application Settings
-   DEMO_MODE=false
-   DEBUG=true
-   SECRET_KEY=generate_a_random_secret_key
-   ```
-
----
-
-### Backend Setup
-
-1. Create and activate a Python virtual environment:
+2. **Create and activate a Python virtual environment**:
    ```bash
    # Windows (PowerShell)
    python -m venv venv
@@ -280,12 +488,20 @@ SDLC Nexus includes an autonomous Model Router (`backend/llm/router.py`) that ma
    source venv/bin/activate
    ```
 
-2. Install dependencies:
+3. **Install dependencies**:
    ```bash
    pip install -r backend/requirements.txt
    ```
 
-3. Launch the Flask API server:
+4. **Configure `.env`**:
+   Copy `.env.example` to `.env` in both project root and `backend/`:
+   ```bash
+   cp .env.example .env
+   cp .env.example backend/.env
+   ```
+   Add your `DATABASE_URL`, `GEMINI_API_KEY`, and `GROQ_API_KEY`.
+
+5. **Start the Flask API server**:
    ```bash
    cd backend
    python app.py
@@ -296,32 +512,36 @@ SDLC Nexus includes an autonomous Model Router (`backend/llm/router.py`) that ma
 
 ### Frontend Setup
 
-1. Open a new terminal window:
+1. **Navigate to the frontend directory**:
    ```bash
    cd frontend
    npm install
    ```
 
-2. Start the Vite development server:
+2. **Start the Vite development server**:
    ```bash
    npm run dev
    ```
-   The frontend UI will be live at `http://localhost:5173`.
+   Open your browser to `http://localhost:5173`.
 
 ---
 
-## 📡 API Architecture & Endpoints
+## 📡 Complete API Reference
 
 | HTTP Method | Route | Description |
 | :--- | :--- | :--- |
-| `GET` | `/api/health` | Service health status, database ping, and active LLM provider info |
-| `GET` | `/api/projects` | List all projects belonging to the authenticated user |
+| `GET` | `/api/health` | Health status, database ping, and active LLM provider info |
+| `GET` | `/api/projects` | List all projects belonging to the user |
 | `POST` | `/api/projects` | Create a new project with a software idea prompt |
 | `GET` | `/api/projects/<id>` | Fetch project details along with its pipeline execution history |
+| `PATCH` | `/api/projects/<id>` | Update project name or idea |
+| `DELETE` | `/api/projects/<id>` | Delete project and cascade-delete all runs and artifacts |
 | `POST` | `/api/projects/<id>/runs` | Launch an autonomous or step-by-step SDLC pipeline run |
 | `GET` | `/api/runs/<id>` | Get real-time status, current stage, and state checkpoint for a run |
-| `GET` | `/api/runs/<id>/stream` | Server-Sent Events (SSE) live event stream for agent tokens and events |
-| `POST` | `/api/runs/<id>/intervene` | Submit human-in-the-loop manual intervention (resume/override/rework) |
+| `POST` | `/api/runs/<id>/stop` | Terminate an active pipeline run safely |
+| `GET` | `/api/runs/<id>/stream` | Server-Sent Events (SSE) live stream for agent tokens and events |
+| `POST` | `/api/runs/<id>/intervene` | Submit human-in-the-loop manual intervention (resume/override/rework/edit) |
+| `GET` | `/api/runs/<id>/events` | Fetch complete chronological event log for a run |
 | `GET` | `/api/runs/<id>/artifacts` | Fetch all generated deliverables (PRD, Architecture, Code, etc.) |
 | `GET` | `/api/security` | **Central Security Overview** across all projects (supports `?project_id=`) |
 | `GET` | `/api/security/<run_id>` | Detailed security findings and CWE classifications for a specific run |
@@ -331,40 +551,51 @@ SDLC Nexus includes an autonomous Model Router (`backend/llm/router.py`) that ma
 
 ---
 
-## 🧪 Verification & Testing
+## 🧪 Automated Test Suites
 
-### Automated Test Suite
+SDLC Nexus maintains an extensive test suite verifying database persistence, agent contracts, and model routing:
 
-Run backend contract and persistence test suites:
 ```bash
-# Run all tests
-pytest -v backend/tests
+# Run all tests (from repository root)
+python -m pytest -v backend/tests
 
 # Test Supabase PostgreSQL persistence specifically
-pytest -v backend/tests/test_supabase_persistence.py
+python -m pytest -v backend/tests/test_supabase_persistence.py
 
 # Test Model Router and fallback resilience
-pytest -v backend/tests/test_model_router.py
-pytest -v backend/tests/test_provider_resilience.py
+python -m pytest -v backend/tests/test_model_router.py
+python -m pytest -v backend/tests/test_provider_resilience.py
 
 # Test Developer & QA Agent execution contracts
-pytest -v backend/tests/test_developer_qa_contract.py
-```
+python -m pytest -v backend/tests/test_developer_qa_contract.py
 
-### Frontend Type Validation
-```bash
-cd frontend
-npx tsc --noEmit
+# Frontend TypeScript validation
+cd frontend && npx tsc --noEmit
 ```
 
 ---
 
-## 📄 License
+## 📚 Deep-Dive Technical Documentation
+
+For in-depth architectural specifications and implementation guides, explore the `docs/` directory:
+
+- [🏗️ System Architecture](docs/ARCHITECTURE.md) — Comprehensive architectural overview and component design.
+- [🔄 LangGraph Workflow Specification](docs/LANGGRAPH_WORKFLOW.md) — Deep dive into state graphs, nodes, and conditional edges.
+- [🤖 Agentic Behavior & Prompt Engineering](docs/AGENTIC_BEHAVIOR.md) — Personas, system prompts, and tool contracts.
+- [💬 Inter-Agent Communication](docs/AGENT_COMMUNICATION.md) — Protocol for structured telemetry and rework messages.
+- [🗄️ Database Architecture](docs/DATABASE.md) — Schema design, indexing strategy, and connection pooling.
+- [🛡️ Security Architecture](docs/SECURITY.md) — AST scanner rules, threat models, and sanitization gates.
+- [⚡ Supabase Integration Guide](docs/SUPABASE.md) — Transaction pooler setup and checkpoint persistence.
+- [📡 API Documentation](docs/API.md) — Endpoint contracts, schemas, and payload examples.
+- [🚢 Deployment Guide](docs/DEPLOYMENT.md) — Production Docker and cloud deployment walkthrough.
+- [🎮 Demonstration Guide](docs/DEMO_GUIDE.md) — Step-by-step demonstration script for live presentations.
+
+---
+
+## 📄 License & Authors
 
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
----
-
 <div align="center">
-  <b>Built with ❤️ by Saicharan & the SDLC Nexus Engineering Team</b>
+  <b>Engineered with precision by Saicharan & the SDLC Nexus Team</b>
 </div>
