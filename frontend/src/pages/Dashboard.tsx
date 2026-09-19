@@ -49,23 +49,21 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Hero Banner: AI Software Engineering Control Center */}
-      <div className="relative overflow-hidden rounded-xl border border-[#30363d] bg-gradient-to-b from-[#161b22] to-[#0d1117] p-8 shadow-xl">
+      {/* Hero Banner */}
+      <div className="relative overflow-hidden rounded-xl border border-[#30363d] bg-gradient-to-b from-[#161b22] to-[#0d1117] p-7 shadow-xl">
         <div className="relative z-10 max-w-3xl">
           <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono font-medium mb-3">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Autonomous Multi-Agent SDLC Platform</span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-zinc-100 sm:text-4xl">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-100">
             AI Software Engineering Control Center
           </h1>
-          <p className="mt-3 text-sm text-zinc-400 leading-relaxed font-sans">
-            Transform natural-language software specifications through coordinated, goal-driven AI engineering agents.
-            Orchestrated with native <strong>LangGraph</strong> state machines, deterministic verification tools, and
-            bounded feedback loops for code generation, security scanning, automated QA, and architectural review.
+          <p className="mt-2 text-sm text-zinc-300 leading-relaxed font-sans max-w-2xl">
+            Transform natural-language software ideas into requirements, architecture, code, security validation, testing, and review through coordinated AI engineering agents.
           </p>
 
-          <div className="mt-6 flex flex-wrap items-center gap-3">
+          <div className="mt-5 flex flex-wrap items-center gap-3">
             <button
               onClick={() => navigate("/projects/new")}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs transition-colors shadow-sm cursor-pointer"
@@ -74,23 +72,23 @@ export const Dashboard: React.FC = () => {
               <span>Start New SDLC Run</span>
             </button>
 
-            <button
-              onClick={() => {
-                navigate("/projects/new?preset=food_delivery");
-              }}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#21262d] hover:bg-[#30363d] text-zinc-200 border border-[#30363d] text-xs font-medium transition-colors cursor-pointer"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>Load Food Delivery Preset</span>
-            </button>
-
             <Link
               to="/live"
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#21262d] hover:bg-[#30363d] text-zinc-200 border border-[#30363d] text-xs font-medium transition-colors"
             >
               <Radio className="w-3.5 h-3.5 text-emerald-400" />
               <span>View Active Workspace</span>
             </Link>
+
+            <button
+              onClick={() => {
+                navigate("/projects/new?preset=food_delivery");
+              }}
+              className="flex items-center gap-1.5 px-3 py-2 text-zinc-400 hover:text-zinc-200 text-xs transition-colors cursor-pointer"
+            >
+              <Sparkles className="w-3 h-3 text-amber-400" />
+              <span>Load Food Delivery Preset</span>
+            </button>
           </div>
         </div>
       </div>
@@ -112,7 +110,7 @@ export const Dashboard: React.FC = () => {
             <Activity className="w-4 h-4 text-emerald-400 animate-pulse" />
           </div>
           <div className="mt-2 text-2xl font-bold font-mono text-emerald-400">{activeRuns}</div>
-          <div className="text-[11px] text-zinc-400 mt-0.5">LangGraph active threads</div>
+          <div className="text-[11px] text-zinc-400 mt-0.5">Running threads</div>
         </div>
 
         <div className="p-4 rounded-lg bg-[#161b22] border border-[#30363d]">
@@ -152,67 +150,70 @@ export const Dashboard: React.FC = () => {
               <h2 className="text-sm font-semibold text-zinc-100">Multi-Agent Workflow Architecture</h2>
               <p className="text-xs text-zinc-400">Deterministic verification & feedback loops coordinated via LangGraph</p>
             </div>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              Zero CrewAI
-            </span>
           </div>
 
-          <div className="flex-1 bg-[#0b0e14] rounded-lg border border-[#30363d] p-4 flex flex-col justify-around text-xs font-mono">
-            {/* Step Sequence */}
-            <div className="grid grid-cols-4 gap-2 text-center">
-              <div className="p-2.5 rounded bg-[#161b22] border border-[#30363d]">
-                <div className="text-emerald-400 font-bold">1. Requirements</div>
-                <div className="text-[10px] text-zinc-400 mt-0.5">PRD & User Stories</div>
-              </div>
-              <div className="p-2.5 rounded bg-[#161b22] border border-[#30363d]">
-                <div className="text-emerald-400 font-bold">2. Architecture</div>
-                <div className="text-[10px] text-zinc-400 mt-0.5">Tech Specs & Modularity</div>
-              </div>
-              <div className="p-2.5 rounded bg-[#161b22] border border-[#30363d]">
-                <div className="text-emerald-400 font-bold">3. Visual Diagram</div>
-                <div className="text-[10px] text-zinc-400 mt-0.5">Mermaid System DAG</div>
-              </div>
-              <div className="p-2.5 rounded bg-[#161b22] border border-amber-500/30">
-                <div className="text-amber-300 font-bold">4. Developer</div>
-                <div className="text-[10px] text-zinc-400 mt-0.5">Multi-File Code Gen</div>
-              </div>
-            </div>
-
-            <div className="my-3 flex items-center justify-center text-zinc-400 text-xs">
-              <span>↓ Parallel Inspection & Bounded Feedback Loops ↓</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 text-center">
-              <div className="p-3 rounded bg-[#1b1419] border border-rose-500/30">
-                <div className="text-rose-300 font-bold flex items-center justify-center gap-1.5">
-                  <ShieldAlert className="w-3.5 h-3.5" /> Security Scanner
+          <div className="flex-1 bg-[#0b0e14] rounded-lg border border-[#30363d] p-4 flex flex-col justify-between text-xs font-mono space-y-4">
+            {/* Sequential Phase 1: Requirements to Development */}
+            <div>
+              <div className="text-[10px] uppercase text-zinc-500 font-semibold tracking-wider mb-2">Phase 1: Synthesis & Architecture</div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                <div className="p-2.5 rounded bg-[#161b22] border border-[#30363d]">
+                  <div className="text-emerald-400 font-bold">1. Requirements</div>
+                  <div className="text-[10px] text-zinc-400 mt-0.5">PRD & User Stories</div>
                 </div>
-                <div className="text-[10px] text-zinc-400 mt-1">
-                  Deterministic regex + LLM reasoning → Triggers Developer Rework on high severity
+                <div className="p-2.5 rounded bg-[#161b22] border border-[#30363d]">
+                  <div className="text-emerald-400 font-bold">2. Architecture</div>
+                  <div className="text-[10px] text-zinc-400 mt-0.5">Tech Specs & Models</div>
                 </div>
-              </div>
-              <div className="p-3 rounded bg-[#141d24] border border-sky-500/30">
-                <div className="text-sky-300 font-bold flex items-center justify-center gap-1.5">
-                  <TestTube2 className="w-3.5 h-3.5" /> QA & Test Engineer
+                <div className="p-2.5 rounded bg-[#161b22] border border-[#30363d]">
+                  <div className="text-emerald-400 font-bold">3. Visual Diagram</div>
+                  <div className="text-[10px] text-zinc-400 mt-0.5">Mermaid System DAG</div>
                 </div>
-                <div className="text-[10px] text-zinc-400 mt-1">
-                  Controlled pytest execution sandbox → Triggers Developer Rework on test failure
+                <div className="p-2.5 rounded bg-[#161b22] border border-amber-500/30">
+                  <div className="text-amber-300 font-bold">4. Developer</div>
+                  <div className="text-[10px] text-zinc-400 mt-0.5">Code Synthesis</div>
                 </div>
               </div>
             </div>
 
-            <div className="my-3 flex items-center justify-center text-zinc-400 text-xs">
-              <span>↓ Code Review & Sign-Off ↓</span>
+            {/* Quality Gates with Rework */}
+            <div>
+              <div className="text-[10px] uppercase text-zinc-500 font-semibold tracking-wider mb-2 flex items-center justify-between">
+                <span>Phase 2: Quality Gates & Automated Rework Loops</span>
+                <span className="text-[10px] text-rose-400">Rework &rarr; Developer Node</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-center">
+                <div className="p-2.5 rounded bg-[#1b1419] border border-rose-500/30">
+                  <div className="text-rose-300 font-bold flex items-center justify-center gap-1.5">
+                    <ShieldAlert className="w-3.5 h-3.5" /> 5. Security Scanner
+                  </div>
+                  <div className="text-[10px] text-zinc-400 mt-0.5">
+                    AST Pattern Scanning & Threat Score
+                  </div>
+                </div>
+                <div className="p-2.5 rounded bg-[#141d24] border border-sky-500/30">
+                  <div className="text-sky-300 font-bold flex items-center justify-center gap-1.5">
+                    <TestTube2 className="w-3.5 h-3.5" /> 6. QA & Test Runner
+                  </div>
+                  <div className="text-[10px] text-zinc-400 mt-0.5">
+                    Sandboxed Pytest Execution & Coverage
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 text-center">
-              <div className="p-2.5 rounded bg-[#161b22] border border-[#30363d]">
-                <div className="text-emerald-400 font-bold">7. Code Reviewer</div>
-                <div className="text-[10px] text-zinc-400 mt-0.5">Architectural Consistency</div>
-              </div>
-              <div className="p-2.5 rounded bg-[#161b22] border border-[#30363d]">
-                <div className="text-emerald-400 font-bold">8. Deliverables Finalizer</div>
-                <div className="text-[10px] text-zinc-400 mt-0.5">Export Bundle & Artifacts</div>
+            {/* Final Sign-Off */}
+            <div>
+              <div className="text-[10px] uppercase text-zinc-500 font-semibold tracking-wider mb-2">Phase 3: Review & Deliverables Finalization</div>
+              <div className="grid grid-cols-2 gap-2 text-center">
+                <div className="p-2.5 rounded bg-[#161b22] border border-[#30363d]">
+                  <div className="text-emerald-400 font-bold">7. Code Reviewer</div>
+                  <div className="text-[10px] text-zinc-400 mt-0.5">Architectural Consistency</div>
+                </div>
+                <div className="p-2.5 rounded bg-[#161b22] border border-emerald-500/40">
+                  <div className="text-emerald-300 font-bold">8. Finalizer</div>
+                  <div className="text-[10px] text-zinc-400 mt-0.5">Deliverables & Checkpoints</div>
+                </div>
               </div>
             </div>
           </div>

@@ -19,11 +19,14 @@ import {
   Package,
   Loader2,
   Layers,
+  FolderGit2,
 } from "lucide-react";
 import { MermaidViewer } from "../components/artifacts/MermaidViewer";
-import { getRunArtifacts } from "../services/api";
+import { getRunArtifacts, getProjects, getProject } from "../services/api";
 import type {
   ArtifactItem,
+  Project,
+  PipelineRun,
   RequirementsOutput,
   ArchitectureOutput,
   VisualArchitectureOutput,
@@ -592,26 +595,80 @@ export const Artifacts: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const runId = searchParams.get("run_id");
   const tabParam = searchParams.get("tab") as "requirements" | "architecture" | "diagrams" | "code" | "security" | "tests" | "review" | null;
+
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const [projectRuns, setProjectRuns] = useState<PipelineRun[]>([]);
+
   const [artifacts, setArtifacts] = useState<ArtifactItem[]>([]);
   const [activeTab, setActiveTab] = useState<"requirements" | "architecture" | "diagrams" | "code" | "security" | "tests" | "review">(
     tabParam || "requirements"
   );
+  const [exportCopied, setExportCopied] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // 1. Initial Load of Projects
+  useEffect(() => {
+    let mounted = true;
+    getProjects()
+      .then((projs) => {
+        if (!mounted) return;
+        const list = projs || [];
+        setProjects(list);
+        if (list.length > 0 && !selectedProjectId) {
+          setSelectedProjectId(list[0].id);
+        }
+      })
+      .catch((err) => console.warn("Failed to load projects:", err));
+    return () => { mounted = false; };
+  }, []);
+
+  // 2. When selectedProjectId changes, load its runs
+  useEffect(() => {
+    let mounted = true;
+    if (!selectedProjectId) return;
+    getProject(selectedProjectId)
+      .then((proj: any) => {
+        if (!mounted) return;
+        const runs: PipelineRun[] = proj?.runs || [];
+        setProjectRuns(runs);
+
+        // If no runId is currently selected or current runId does not belong to this project, select the latest run
+        if (runs.length > 0) {
+          const runExistsInProject = runs.some((r) => r.id === runId);
+          if (!runId || !runExistsInProject) {
+            const latest = runs[0].id;
+            setSearchParams((prev) => {
+              const next = new URLSearchParams(prev);
+              next.set("run_id", latest);
+              return next;
+            }, { replace: true });
+          }
+        }
+      })
+      .catch((err) => console.warn("Failed to load project runs:", err));
+    return () => { mounted = false; };
+  }, [selectedProjectId]);
 
   useEffect(() => {
     if (tabParam && tabParam !== activeTab) {
       setActiveTab(tabParam);
     }
   }, [tabParam]);
-  const [exportCopied, setExportCopied] = useState(false);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
     const fetchArtifacts = async () => {
       if (!runId) { setLoading(false); return; }
-      try { const res = await getRunArtifacts(runId); if (mounted) setArtifacts(res || []); }
-      catch (err) { console.warn(err); }
-      finally { if (mounted) setLoading(false); }
+      setLoading(true);
+      try {
+        const res = await getRunArtifacts(runId);
+        if (mounted) setArtifacts(res || []);
+      } catch (err) {
+        console.warn(err);
+      } finally {
+        if (mounted) setLoading(false);
+      }
     };
     fetchArtifacts();
     return () => { mounted = false; };
@@ -646,7 +703,7 @@ export const Artifacts: React.FC = () => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-5rem)] space-y-4 max-w-7xl mx-auto">
-      <div className="p-3.5 rounded-lg bg-[#161b22] border border-[#30363d] flex items-center justify-between shrink-0">
+      <div className="p-3.5 rounded-lg bg-[#161b22] border border-[#30363d] flex flex-wrap items-center justify-between gap-3 shrink-0">
         <div>
           <h1 className="text-sm font-bold text-zinc-100 flex items-center gap-2">
             <FileCode className="w-4 h-4 text-emerald-400" /> Artifact Explorer and Project Deliverables
@@ -654,16 +711,61 @@ export const Artifacts: React.FC = () => {
           <p className="text-[11px] text-zinc-400 mt-0.5">
             {runId
               ? <span>Run <span className="font-mono text-zinc-300">{runId.split("-")[0].toUpperCase()}</span>{" · "}{artifacts.length} artifact{artifacts.length !== 1 ? "s" : ""} loaded</span>
-              : "No run selected - open from a project run page."}
+              : "Select a project and run to inspect deliverables."}
           </p>
         </div>
-        {runId && (
-          <button onClick={handleDownloadZip}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs border border-zinc-700 transition-colors cursor-pointer">
-            <Download className="w-3.5 h-3.5" />
-            <span>{exportCopied ? "Downloaded!" : "Export Deliverables JSON"}</span>
-          </button>
-        )}
+
+        {/* Project & Run Selectors */}
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex items-center gap-1.5 bg-[#0d1117] border border-[#30363d] rounded px-2.5 py-1.5">
+            <FolderGit2 className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+            <select
+              value={selectedProjectId}
+              onChange={(e) => setSelectedProjectId(e.target.value)}
+              className="bg-transparent text-xs text-zinc-200 outline-none cursor-pointer max-w-[180px] truncate"
+            >
+              {projects.length === 0 && <option value="">No projects</option>}
+              {projects.map((p) => (
+                <option key={p.id} value={p.id} className="bg-[#161b22] text-zinc-200">
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-1.5 bg-[#0d1117] border border-[#30363d] rounded px-2.5 py-1.5">
+            <Layers className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+            <select
+              value={runId || ""}
+              onChange={(e) => {
+                const newRunId = e.target.value;
+                setSearchParams((prev) => {
+                  const next = new URLSearchParams(prev);
+                  next.set("run_id", newRunId);
+                  return next;
+                }, { replace: true });
+              }}
+              className="bg-transparent text-xs text-zinc-200 font-mono outline-none cursor-pointer max-w-[170px] truncate"
+            >
+              {projectRuns.length === 0 && <option value="">No runs</option>}
+              {projectRuns.map((r) => (
+                <option key={r.id} value={r.id} className="bg-[#161b22] text-zinc-200 font-mono">
+                  {`Run ${r.id.split("-")[0].toUpperCase()} (${r.status})`}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {runId && (
+            <button
+              onClick={handleDownloadZip}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs border border-zinc-700 transition-colors cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>{exportCopied ? "Downloaded!" : "Export Deliverables JSON"}</span>
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col rounded-xl border border-[#30363d] bg-[#161b22] overflow-hidden min-h-0">

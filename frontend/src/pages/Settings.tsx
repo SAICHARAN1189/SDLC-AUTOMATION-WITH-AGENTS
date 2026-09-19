@@ -72,7 +72,7 @@ export const Settings: React.FC = () => {
 
           <div className="p-3 rounded-lg bg-[#0d1117] border border-[#30363d] flex items-center justify-between">
             <span className="flex items-center gap-2 text-zinc-300">
-              <Cpu className="w-4 h-4 text-amber-400" /> Groq LLM Inference
+              <Cpu className="w-4 h-4 text-emerald-400" /> Google Gemini API
             </span>
             <span className="text-emerald-400 flex items-center gap-1 text-[11px]">
               <CheckCircle2 className="w-3.5 h-3.5" /> Ready
@@ -81,10 +81,10 @@ export const Settings: React.FC = () => {
 
           <div className="p-3 rounded-lg bg-[#0d1117] border border-[#30363d] flex items-center justify-between">
             <span className="flex items-center gap-2 text-zinc-300">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" /> Zero CrewAI Policy
+              <Cpu className="w-4 h-4 text-amber-400" /> Groq Cloud Inference
             </span>
             <span className="text-emerald-400 flex items-center gap-1 text-[11px]">
-              <CheckCircle2 className="w-3.5 h-3.5" /> Enforced
+              <CheckCircle2 className="w-3.5 h-3.5" /> Ready
             </span>
           </div>
 
@@ -98,50 +98,100 @@ export const Settings: React.FC = () => {
           </div>
         </div>
 
-        {/* Security Alert: Backend Service Role Key Isolation */}
+        {/* Security Alert: Backend Key Isolation */}
         <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20 text-emerald-300 text-xs flex items-start gap-2.5">
           <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
           <div className="space-y-1">
             <div className="font-semibold font-mono">Strict Key Isolation Verified</div>
             <p className="text-[11px] text-zinc-400 font-sans leading-relaxed">
-              <code>SUPABASE_SERVICE_ROLE_KEY</code> and <code>GROQ_API_KEY</code> are confined strictly to backend runtime memory.
-              No credentials or secret service role keys are exposed over the wire to client-side bundles.
+              <code>SUPABASE_SERVICE_ROLE_KEY</code>, <code>GEMINI_API_KEY</code>, and <code>GROQ_API_KEY</code> are confined strictly to backend runtime memory. No credentials are exposed to client-side bundles.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Execution Mode Settings Form */}
+      {/* Execution Mode & Model Configuration Form */}
       <form onSubmit={handleSave} className="p-5 rounded-xl border border-[#30363d] bg-[#161b22] space-y-4">
-        <h2 className="text-xs font-semibold text-zinc-200 uppercase font-mono">
-          Runtime Configuration
-        </h2>
-
-        <div className="space-y-3 font-mono text-xs">
-          <div className="flex items-center justify-between p-3 rounded-lg bg-[#0d1117] border border-[#30363d]">
-            <div>
-              <div className="font-semibold text-zinc-200">Centralized Multi-Provider LLM Engine</div>
-              <div className="text-[11px] text-zinc-400 font-sans mt-0.5">
-                Primary Provider: Google Gemini (Active) · Secondary / Fallback Provider: Groq (Ready)
-              </div>
-            </div>
-            <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold">
-              GEMINI + GROQ
-            </span>
+        <div className="flex items-center justify-between border-b border-[#30363d] pb-3">
+          <div>
+            <h2 className="text-xs font-semibold text-zinc-200 uppercase font-mono">
+              Runtime Model Configuration & Routing Matrix
+            </h2>
+            <p className="text-[11px] text-zinc-400 font-sans mt-0.5">
+              Task-specific primary models and autonomous multi-tier fallback chains.
+            </p>
           </div>
+          <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-mono font-semibold">
+            GEMINI + GROQ
+          </span>
+        </div>
 
-          <div className="p-3 rounded-lg bg-[#0d1117] border border-[#30363d] space-y-1.5">
-            <label className="text-[11px] text-zinc-300 block">Default Primary Model</label>
-            <input
-              type="text"
-              defaultValue="gemini-3.8-flash"
-              className="w-full px-3 py-1.5 rounded bg-[#161b22] border border-[#30363d] text-zinc-200 text-xs focus:outline-none"
-            />
-          </div>
+        {/* Full Model Allocation Table */}
+        <div className="border border-[#30363d] rounded-lg overflow-hidden font-mono text-xs">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-[#0d1117] border-b border-[#30363d] text-[10px] text-zinc-400 uppercase">
+                <th className="py-2.5 px-3">Agent Task</th>
+                <th className="py-2.5 px-3">Primary Model</th>
+                <th className="py-2.5 px-3">Provider</th>
+                <th className="py-2.5 px-3">Fallback Chain</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#30363d]/60 text-[11px]">
+              <tr className="bg-[#12161f]/40 hover:bg-[#161b22]">
+                <td className="py-2 px-3 font-semibold text-zinc-200">Requirements Analyst</td>
+                <td className="py-2 px-3 text-emerald-400">gemini-3.5-flash-lite</td>
+                <td className="py-2 px-3 text-zinc-400">Google Gemini</td>
+                <td className="py-2 px-3 text-zinc-500">gemini-3.1-flash-lite → gpt-oss-20b</td>
+              </tr>
+              <tr className="bg-[#12161f]/40 hover:bg-[#161b22]">
+                <td className="py-2 px-3 font-semibold text-zinc-200">System Architect</td>
+                <td className="py-2 px-3 text-emerald-400">gemini-3.8-flash <span className="text-[10px] text-zinc-500">[thinking: low]</span></td>
+                <td className="py-2 px-3 text-zinc-400">Google Gemini</td>
+                <td className="py-2 px-3 text-zinc-500">gemini-3.5-flash-lite → gpt-oss-20b</td>
+              </tr>
+              <tr className="bg-[#12161f]/40 hover:bg-[#161b22]">
+                <td className="py-2 px-3 font-semibold text-zinc-200">Visual Architect</td>
+                <td className="py-2 px-3 text-emerald-400">gemini-3.1-flash-lite</td>
+                <td className="py-2 px-3 text-zinc-400">Google Gemini</td>
+                <td className="py-2 px-3 text-zinc-500">gemini-3.5-flash-lite → gpt-oss-20b</td>
+              </tr>
+              <tr className="bg-[#12161f]/40 hover:bg-[#161b22]">
+                <td className="py-2 px-3 font-semibold text-zinc-200">Developer Agent</td>
+                <td className="py-2 px-3 text-amber-400">openai/gpt-oss-120b</td>
+                <td className="py-2 px-3 text-zinc-400">Groq Cloud</td>
+                <td className="py-2 px-3 text-zinc-500">gemini-3.5-flash-lite → gpt-oss-20b</td>
+              </tr>
+              <tr className="bg-[#12161f]/40 hover:bg-[#161b22]">
+                <td className="py-2 px-3 font-semibold text-zinc-200">Security Lead</td>
+                <td className="py-2 px-3 text-amber-400">openai/gpt-oss-20b</td>
+                <td className="py-2 px-3 text-zinc-400">Groq Cloud</td>
+                <td className="py-2 px-3 text-zinc-500">gemini-3.5-flash-lite</td>
+              </tr>
+              <tr className="bg-[#12161f]/40 hover:bg-[#161b22]">
+                <td className="py-2 px-3 font-semibold text-zinc-200">QA Engineer</td>
+                <td className="py-2 px-3 text-amber-400">openai/gpt-oss-120b</td>
+                <td className="py-2 px-3 text-zinc-400">Groq Cloud</td>
+                <td className="py-2 px-3 text-zinc-500">gemini-3.5-flash-lite → gpt-oss-20b</td>
+              </tr>
+              <tr className="bg-[#12161f]/40 hover:bg-[#161b22]">
+                <td className="py-2 px-3 font-semibold text-zinc-200">Review Architect</td>
+                <td className="py-2 px-3 text-emerald-400">gemini-3.5-flash-lite</td>
+                <td className="py-2 px-3 text-zinc-400">Google Gemini</td>
+                <td className="py-2 px-3 text-zinc-500">gemini-3.1-flash-lite → gpt-oss-20b</td>
+              </tr>
+              <tr className="bg-[#12161f]/40 hover:bg-[#161b22]">
+                <td className="py-2 px-3 font-semibold text-zinc-200">Model Lab Benchmarks</td>
+                <td className="py-2 px-3 text-sky-400">Comparison Suite</td>
+                <td className="py-2 px-3 text-zinc-400">Multi-Model</td>
+                <td className="py-2 px-3 text-zinc-500">gemini-3.8-flash, gpt-oss-120b, gpt-oss-20b, groq/compound</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
         <div className="flex items-center justify-between pt-2">
-          {saved && <span className="text-xs font-mono text-emerald-400">Settings saved successfully.</span>}
+          {saved && <span className="text-xs font-mono text-emerald-400">Settings preferences saved.</span>}
           <button
             type="submit"
             className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs transition-colors cursor-pointer"
