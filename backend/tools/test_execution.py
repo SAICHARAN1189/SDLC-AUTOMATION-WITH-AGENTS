@@ -183,6 +183,21 @@ def parse_pytest_output(stdout: str, stderr: str, returncode: int) -> TestRunRes
                     expected = "Successful execution without error"
                     actual = short_msg
 
+            # Derive actionable recommended_fix for developer
+            rec_fix = None
+            if "404" in str(root_cause) or "NotFound" in str(root_cause):
+                rec_fix = "Register the requested endpoint route in the backend router with correct HTTP method."
+            elif "AssertionError" in str(root_cause) or "Assertion failed" in str(root_cause):
+                rec_fix = f"Update logic in {', '.join(affected_files) if affected_files else 'source code'} to satisfy assertion condition."
+            elif "ImportError" in str(root_cause) or "ModuleNotFoundError" in str(root_cause):
+                rec_fix = "Verify module exists in project files and is listed in requirements.txt."
+            elif "ZeroDivisionError" in str(root_cause):
+                rec_fix = "Add guard check to avoid division by zero."
+            elif "KeyError" in str(root_cause) or "AttributeError" in str(root_cause):
+                rec_fix = "Ensure required key/attribute exists or use safe retrieval with default."
+            else:
+                rec_fix = f"Fix underlying error in {', '.join(affected_files) if affected_files else 'implementation'}."
+
             failures.append({
                 "test": test_id,
                 "test_name": test_id,
@@ -190,6 +205,7 @@ def parse_pytest_output(stdout: str, stderr: str, returncode: int) -> TestRunRes
                 "actual": actual or (root_cause or "Test failed"),
                 "root_cause": root_cause or (short_msg or "Assertion failure or unhandled exception"),
                 "affected_files": affected_files,
+                "recommended_fix": rec_fix,
                 "stack_trace": stack_trace,
             })
 
@@ -206,6 +222,7 @@ def parse_pytest_output(stdout: str, stderr: str, returncode: int) -> TestRunRes
             "actual": rc,
             "root_cause": rc,
             "affected_files": [],
+            "recommended_fix": "Fix syntax or collection errors in project files so pytest can execute tests.",
             "stack_trace": trace[-2000:],
         })
 

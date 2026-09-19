@@ -152,6 +152,62 @@ def developer_node(state: ProjectState) -> dict[str, Any]:
         output["files"] = files
         output["project_structure"] = sorted(list(current_paths))
 
+    # Always ensure complete_project_files reflects all project files
+    output["complete_project_files"] = list(files)
+    if not output.get("changed_files"):
+        output["changed_files"] = [
+            f.get("path") if isinstance(f, dict) else getattr(f, "path", "")
+            for f in files
+        ]
+
+    # Pre-QA Implementation Validation Gate
+    from backend.tools.implementation_validator import validate_implementation
+    val_result = validate_implementation(
+        files=files,
+        architecture=state.get("architecture"),
+        requirements=state.get("requirements"),
+        setup_instructions=output.get("setup_instructions") or [],
+        existing_files=existing_files,
+        mode=mode,
+    )
+
+    # Bounded single self-repair attempt if validator finds blocking issues and not in demo mode
+    if not val_result.passed and not state.get("demo_mode", True) and not state.get("validation_retry_attempted"):
+        logger.warning(f"Developer implementation failed validation: {val_result.summary}. Attempting bounded repair.")
+        retry_state = dict(state)
+        retry_state["validation_retry_attempted"] = True
+        retry_state["validation_issues"] = [i.to_dict() for i in val_result.blocking_issues]
+        retry_state["code"] = output
+        retry_state["developer_mode"] = DeveloperMode.QA_REWORK.value
+        repaired_output, _ = _run_agent(retry_state, "developer_agent", "DEVELOPER")
+        
+        # Merge repaired output
+        repaired_files = repaired_output.get("files") or []
+        repaired_paths = {f.get("path") if isinstance(f, dict) else getattr(f, "path", "") for f in repaired_files}
+        for orig_f in files:
+            orig_path = orig_f.get("path") if isinstance(orig_f, dict) else getattr(orig_f, "path", "")
+            if orig_path and orig_path not in repaired_paths:
+                repaired_files.append(orig_f)
+        output = repaired_output
+        output["files"] = repaired_files
+        output["complete_project_files"] = list(repaired_files)
+        files = repaired_files
+
+        # Re-validate
+        val_result = validate_implementation(
+            files=files,
+            architecture=state.get("architecture"),
+            requirements=state.get("requirements"),
+            setup_instructions=output.get("setup_instructions") or [],
+            existing_files=existing_files,
+            mode=mode,
+        )
+
+    output["validation_passed"] = val_result.passed
+    output["validation_issues"] = [i.to_dict() for i in val_result.issues]
+
+    developer_status = "COMPLETED" if val_result.passed else "FAILED_VALIDATION"
+
     zip_bytes = files_to_zip_bytes(files)
     storage_path = maybe_upload_bytes(artifact_storage_path(state["run_id"], "source.zip"), zip_bytes)
     artifact_id = repositories.add_artifact(
@@ -161,20 +217,50 @@ def developer_node(state: ProjectState) -> dict[str, Any]:
         json.dumps(output, indent=2),
         storage_path=storage_path,
     )
-    if mode != DeveloperMode.INITIAL_IMPLEMENTATION.value:
-        emit(state["run_id"], EventType.REWORK_COMPLETED.value, "Updated implementation submitted", "DEVELOPER", "developer_agent", "COMPLETED")
-        receiver = "security_agent"
-        content = "Updated implementation submitted for re-scan."
+
+    receiver = "security_agent"
+    if val_result.passed:
+        if mode != DeveloperMode.INITIAL_IMPLEMENTATION.value:
+            emit(state["run_id"], EventType.REWORK_COMPLETED.value, "Updated implementation submitted", "DEVELOPER", "developer_agent", "COMPLETED")
+            content = "Updated implementation submitted for re-scan."
+        else:
+            emit(state["run_id"], EventType.FEEDBACK_CREATED.value, "Initial implementation validated and complete", "DEVELOPER", "developer_agent", "COMPLETED")
+            content = "Initial implementation available for security analysis."
+        message_type = "CODE_UPDATED"
     else:
-        receiver = "security_agent"
-        content = "Initial implementation available for security analysis."
-    message = _message("developer_agent", receiver, "CODE_UPDATED", content, "CONTINUE", affected_files=output.get("changed_files") or [])
+        emit(
+            state["run_id"],
+            EventType.FEEDBACK_CREATED.value,
+            f"Implementation failed sanity checks: {val_result.summary}",
+            "DEVELOPER",
+            "developer_agent",
+            "FAILED_VALIDATION",
+            metadata={"validation_issues": output["validation_issues"]},
+        )
+        content = f"Implementation completed with validation warnings: {val_result.summary}"
+        message_type = "VALIDATION_WARNING"
+
+    message = _message(
+        "developer_agent",
+        receiver,
+        message_type,
+        content,
+        "CONTINUE",
+        affected_files=output.get("changed_files") or [],
+    )
     emit(state["run_id"], EventType.FEEDBACK_CREATED.value, content, "DEVELOPER", "developer_agent", metadata=message)
-    update_live_state(state["run_id"], {"code": output, "current_stage": "DEVELOPMENT"})
+    update_live_state(state["run_id"], {
+        "code": output,
+        "current_stage": "DEVELOPMENT",
+        "developer_status": developer_status,
+        "validation_issues": output["validation_issues"],
+    })
     return {
         "code": output,
         "current_stage": "DEVELOPMENT",
         "current_agent": "developer_agent",
+        "developer_status": developer_status,
+        "validation_issues": output["validation_issues"],
         "messages": [message],
         "artifact_ids": [artifact_id],
         "developer_mode": mode,

@@ -321,3 +321,73 @@ def test_app_root_route():
     data = resp.get_json()
     assert data["status"] == "online"
     assert data["frontend_url"] == "http://localhost:5173"
+
+
+def test_code_output_syncs_complete_project_files():
+    """Verify CodeOutput automatically keeps files and complete_project_files synchronized."""
+    output = CodeOutput(
+        files=[CodeFile(path="app.py", content="print('hello')")],
+        dependencies=[],
+        setup_instructions=[],
+    )
+    assert len(output.complete_project_files) == 1
+    assert output.complete_project_files[0].path == "app.py"
+
+    # Conversely with complete_project_files
+    output2 = CodeOutput(
+        complete_project_files=[CodeFile(path="main.py", content="print('main')")],
+        dependencies=[],
+        setup_instructions=[],
+    )
+    assert len(output2.files) == 1
+    assert output2.files[0].path == "main.py"
+
+
+def test_developer_node_populates_complete_project_files_and_status():
+    """Verify developer_node outputs complete_project_files and developer_status."""
+    state = initial_state(
+        {
+            "project_id": "p-complete",
+            "run_id": "test-run-complete",
+            "user_id": "u-complete",
+            "user_idea": "Test complete app",
+            "demo_mode": True,
+        }
+    )
+    res = developer_node(state)
+    assert "code" in res
+    assert "complete_project_files" in res["code"]
+    assert len(res["code"]["complete_project_files"]) > 0
+    assert "developer_status" in res
+    assert res["developer_status"] in ("COMPLETED", "FAILED_VALIDATION")
+
+
+def test_qa_failure_includes_recommended_fix():
+    """Verify TestFailure model and parse_pytest_output generate actionable recommended_fix."""
+    stdout = """
+=================================== FAILURES ===================================
+__________________________________ test_route __________________________________
+tests/test_api.py:10: in test_route
+    assert res.status_code == 200
+E   AssertionError: assert 404 == 200
+=========================== short test summary info ============================
+FAILED tests/test_api.py::test_route - AssertionError: assert 404 == 200
+1 failed in 0.05s
+"""
+    result = parse_pytest_output(stdout, "", 1)
+    assert len(result.failures) == 1
+    failure = result.failures[0]
+    assert "recommended_fix" in failure
+    assert failure["recommended_fix"] is not None
+    assert len(failure["recommended_fix"]) > 0
+
+
+def test_bounded_json_repair_without_eval():
+    """Verify extract_json repairs trailing commas and unclosed brackets safely without eval()."""
+    from backend.utils.validators import extract_json
+
+    malformed = '{"project_structure": ["app.py", "models.py",], "dependencies": ["fastapi",],}'
+    parsed = extract_json(malformed)
+    assert parsed["project_structure"] == ["app.py", "models.py"]
+    assert parsed["dependencies"] == ["fastapi"]
+

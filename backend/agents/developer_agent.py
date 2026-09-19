@@ -36,6 +36,7 @@ class DeveloperAgent(BaseEngineeringAgent):
             "security_report": state.get("security_report"),
             "test_report": state.get("test_report"),
             "review_report": state.get("review_report"),
+            "validation_issues": state.get("validation_issues") or [],
             "developer_mode": mode,
         }
 
@@ -48,8 +49,13 @@ class DeveloperAgent(BaseEngineeringAgent):
         }:
             output = demo_secure_code()
             output.mode = DeveloperMode(mode)
+            output.complete_project_files = list(output.files)
+            output.changed_files = [f.path for f in output.files]
             return output
-        return demo_initial_code()
+        output = demo_initial_code()
+        output.complete_project_files = list(output.files)
+        output.changed_files = [f.path for f in output.files]
+        return output
 
     def build_prompt(self, observed: dict[str, Any]) -> tuple[str, str]:
         mode = observed.get("developer_mode") or DeveloperMode.INITIAL_IMPLEMENTATION.value
@@ -58,18 +64,30 @@ class DeveloperAgent(BaseEngineeringAgent):
         sec = observed.get("security_report") or {}
         qa = observed.get("test_report") or {}
         rev = observed.get("review_report") or {}
+        val_issues = observed.get("validation_issues") or []
         code_data = observed.get("code") or {}
 
         if mode == DeveloperMode.INITIAL_IMPLEMENTATION.value:
             system = (
-                "You are an expert Full-Stack Software Engineer. "
+                "You are an expert Full-Stack Software Engineer.\n"
                 "CRITICAL IMPLEMENTATION CONTRACT:\n"
                 "1. INITIAL_IMPLEMENTATION: You MUST generate ALL files required for a COMPLETE, RUNNABLE project.\n"
-                "   Do NOT output only a partial file list or single patch.\n"
-                "   For web applications, include all required: HTML, CSS, JavaScript/TypeScript, configuration, "
-                "dependency files (requirements.txt, package.json), backend files (app.py, routes, models), and test support files.\n"
-                "2. The output MUST represent a runnable project where all file references, imports, and script tags are consistent.\n"
-                "Return ONLY a single valid JSON object strictly matching this schema with no conversational text or markdown code fence:\n"
+                "   Include backend files, frontend files (HTML/CSS/JS), requirements.txt, configuration, and database setup.\n"
+                "2. FRONTEND/BACKEND CONTRACT: Cross-check all frontend API calls (fetch/axios) against backend routes.\n"
+                "   Every endpoint called by the frontend (path, HTTP method) MUST be implemented in the backend.\n"
+                "   Never call nonexistent endpoints (e.g. if frontend calls POST /api/v1/tasks/decompose, backend must implement it).\n"
+                "3. DATABASE CONSISTENCY & INITIALIZATION:\n"
+                "   - If models/tables are defined (SQLModel/SQLAlchemy), database initialization (e.g. SQLModel.metadata.create_all)\n"
+                "     MUST be explicitly invoked during application startup (e.g. in lifespan, on_event startup, or main).\n"
+                "   - In ORM relationships, back_populates MUST be symmetric across related models. Never leave one-sided relationships.\n"
+                "   - NO SILENT SQLITE FALLBACK: If architecture specifies PostgreSQL/Supabase, honor it using environment variables\n"
+                "     (DATABASE_URL) and do NOT silently hardcode sqlite:///./app.db.\n"
+                "4. STATIC FRONTEND SERVING: If a static frontend exists, backend MUST mount or serve it (e.g. FastAPI StaticFiles or Flask render_template/send_from_directory).\n"
+                "5. REAL FUNCTIONALITY, NOT FAKE MOCKS: Implement real features. Never use dummy stubs like mock_decompose() or TODO placeholders.\n"
+                "6. SECURITY QUALITY: Avoid eval(), exec(), hardcoded secrets/API keys, SQL string concatenation, and unsafe innerHTML.\n"
+                "7. DEPENDENCIES & STARTUP: requirements.txt must list all imported third-party libraries. Do NOT add selenium unless browser automation is required.\n"
+                "   Startup commands in setup_instructions must match the actual file structure (e.g. 'python backend/app.py' if inside backend/).\n"
+                "Return ONLY a single valid JSON object strictly matching this schema with no markdown code fence:\n"
                 "{\n"
                 '  "project_structure": ["backend/app.py", "backend/routes.py", "requirements.txt", "static/index.html", "static/style.css"],\n'
                 '  "files": [\n'
@@ -87,14 +105,14 @@ class DeveloperAgent(BaseEngineeringAgent):
             system = (
                 "You are an expert Full-Stack Software Engineer performing REWORK on an existing codebase.\n"
                 "CRITICAL REWORK CONTRACT:\n"
-                "1. Analyze the exact QA failures and/or Security vulnerabilities reported.\n"
-                "   For QA failures, examine: failing test, expected behavior, actual behavior, affected file, and root cause.\n"
-                "2. Fix the underlying application code / logic so it satisfies requirements and tests.\n"
-                "3. DO NOT blindly add dependencies (e.g. do not add selenium unless genuinely required by the architecture).\n"
-                "4. DO NOT merely patch or bypass tests without fixing the application.\n"
-                "5. Preserve working functionality across all existing files.\n"
-                "6. Return the updated files. Any files you provide will be merged into the existing project files "
-                "to maintain the COMPLETE, CONSISTENT project.\n"
+                "1. Analyze the exact QA failures, Security vulnerabilities, and Implementation Validation issues reported.\n"
+                "   For QA failures, examine: failing test, expected behavior, actual behavior, affected file, root cause, and recommended fix.\n"
+                "2. Modify the EXISTING complete project. Never drop working files.\n"
+                "   Any files you return will be merged into the existing project files to maintain the COMPLETE, CONSISTENT project.\n"
+                "3. Ensure all frontend API calls match backend routes, database initialization executes, ORM back_populates is symmetric,\n"
+                "   and no mock_* stubs or unsafe innerHTML exist.\n"
+                "4. DO NOT blindly add dependencies (e.g. do not add selenium unless genuinely required by the architecture).\n"
+                "5. Return the updated files. Distinguish 'changed_files' from the complete file set.\n"
                 "Return ONLY a single valid JSON object strictly matching the CodeOutput schema."
             )
 
@@ -113,7 +131,7 @@ class DeveloperAgent(BaseEngineeringAgent):
             if v.get("severity") in ("CRITICAL", "HIGH", "MEDIUM")
         ] if sec else []
 
-        # Preserve exact test failures with root cause and affected files
+        # Preserve exact test failures with root cause, recommended fix, and affected files
         qa_failures = [
             {
                 "test": f.get("test") or f.get("test_name"),
@@ -122,6 +140,7 @@ class DeveloperAgent(BaseEngineeringAgent):
                 "actual": f.get("actual"),
                 "root_cause": f.get("root_cause"),
                 "affected_files": f.get("affected_files") or [],
+                "recommended_fix": f.get("recommended_fix"),
                 "stack_trace": f.get("stack_trace"),
             }
             for f in qa.get("failures") or []
@@ -156,6 +175,8 @@ class DeveloperAgent(BaseEngineeringAgent):
             compact["security_issues_to_fix"] = sec_findings
         if qa_failures:
             compact["qa_test_failures_to_fix"] = qa_failures
+        if val_issues:
+            compact["implementation_validation_issues_to_fix"] = val_issues
         if rev.get("blocking_issues") or rev.get("required_changes"):
             compact["review_required_changes"] = {
                 "blocking_issues": rev.get("blocking_issues"),
@@ -197,9 +218,25 @@ class DeveloperAgent(BaseEngineeringAgent):
             merged_files_map.update(draft_files_map)
 
             draft.files = [CodeFile(path=p, content=c) for p, c in sorted(merged_files_map.items())]
+            draft.complete_project_files = list(draft.files)
             draft.changed_files = sorted(changed)
         else:
+            draft.complete_project_files = list(draft.files)
             draft.changed_files = [item.path for item in draft.files]
+
+        # Run Implementation Validator on complete project files
+        from backend.tools.implementation_validator import validate_implementation
+
+        val_result = validate_implementation(
+            files=draft.files,
+            architecture=observed.get("architecture"),
+            requirements=observed.get("requirements"),
+            setup_instructions=draft.setup_instructions,
+            existing_files=existing_raw,
+            mode=mode,
+        )
+        draft.validation_passed = val_result.passed
+        draft.validation_issues = [issue.to_dict() for issue in val_result.issues]
 
         # Write ALL complete project files to temporary root to validate structure
         with tempfile.TemporaryDirectory() as tmp:
@@ -216,6 +253,7 @@ class DeveloperAgent(BaseEngineeringAgent):
             "total_files": len(draft.files),
             "changed_files": draft.changed_files,
             "mode": mode,
+            "validation": val_result.to_dict(),
         }
 
     def apply_tools(self, output: CodeOutput, tool_context: dict[str, Any]) -> CodeOutput:

@@ -128,6 +128,7 @@ class QAAgent(BaseEngineeringAgent):
                 actual=item.get("actual"),
                 root_cause=item.get("root_cause"),
                 affected_files=item.get("affected_files") or [],
+                recommended_fix=item.get("recommended_fix"),
                 stack_trace=item.get("stack_trace"),
                 affected_component=(item.get("affected_files") or [None])[0] or "generated_tests",
             )
@@ -135,6 +136,7 @@ class QAAgent(BaseEngineeringAgent):
         ]
         output.summary = execution.stdout or output.summary
         output.overall_status = GateStatus.PASS if execution.failed == 0 and execution.executed else GateStatus.FAIL
+        output.status = "PASS" if execution.failed == 0 and execution.executed else "FAIL"
         output.severity = "HIGH" if (execution.failed > 0 or not execution.executed) else "LOW"
         if not output.generated_tests:
             output.generated_tests = demo_tests()

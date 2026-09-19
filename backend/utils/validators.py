@@ -12,6 +12,13 @@ from backend.models.schemas import ErrorCategory
 JSON_FENCE = re.compile(r"```(?:json)?\s*(.*?)```", re.DOTALL | re.IGNORECASE)
 
 
+def _repair_json_string(s: str) -> str:
+    """Bounded, safe JSON syntax repair without eval()."""
+    # Remove trailing commas before } or ]
+    s = re.sub(r',\s*(\}|\])', r'\1', s)
+    return s
+
+
 def extract_json(text: str) -> Any:
     text = text.strip()
     fenced = JSON_FENCE.search(text)
@@ -31,13 +38,25 @@ def extract_json(text: str) -> Any:
     try:
         return json.loads(candidate)
     except json.JSONDecodeError:
+        # Bounded attempt 1: Suffix closure
         for suffix in ("}", "]}", "]}}", "\"}", "\"]}"):
             try:
                 return json.loads(candidate + suffix)
             except json.JSONDecodeError:
                 continue
 
-        # If text has code blocks, extract into files dictionary
+        # Bounded attempt 2: Repair trailing commas and minor syntax errors
+        try:
+            repaired = _repair_json_string(candidate)
+            return json.loads(repaired)
+        except json.JSONDecodeError:
+            for suffix in ("}", "]}", "]}}", "\"}", "\"]}"):
+                try:
+                    return json.loads(repaired + suffix)
+                except json.JSONDecodeError:
+                    continue
+
+        # Bounded attempt 3: Extract code blocks if present
         code_blocks = re.findall(r"```(?:\w+)?\s*(?:#\s*([^\n]+))?\n(.*?)```", text, re.DOTALL)
         if code_blocks:
             files = []
@@ -47,6 +66,7 @@ def extract_json(text: str) -> Any:
             return {
                 "project_structure": [f["path"] for f in files],
                 "files": files,
+                "complete_project_files": files,
                 "dependencies": ["flask", "pydantic"],
                 "setup_instructions": ["pip install -r requirements.txt"],
                 "implementation_notes": "Extracted from generated code blocks.",

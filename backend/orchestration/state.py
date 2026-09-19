@@ -44,6 +44,8 @@ class ProjectState(TypedDict, total=False):
     security_status: str
     testing_status: str
     review_status: str
+    developer_status: str
+    validation_issues: list[dict[str, Any]]
     final_status: str
     errors: Annotated[list[dict[str, Any]], append_list]
     artifact_ids: Annotated[list[str], append_list]
@@ -85,6 +87,8 @@ def initial_state(payload: dict[str, Any]) -> ProjectState:
         security_status="PENDING",
         testing_status="PENDING",
         review_status="PENDING",
+        developer_status="PENDING",
+        validation_issues=[],
         final_status="PENDING",
         errors=[],
         artifact_ids=[],

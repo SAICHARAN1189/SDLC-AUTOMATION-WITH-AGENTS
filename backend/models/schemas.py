@@ -211,12 +211,21 @@ class CodeFile(BaseModel):
 class CodeOutput(BaseModel):
     project_structure: List[str] = Field(default_factory=list)
     files: List[CodeFile] = Field(default_factory=list)
+    complete_project_files: List[CodeFile] = Field(default_factory=list)
+    changed_files: List[str] = Field(default_factory=list)
     dependencies: List[str] = Field(default_factory=list)
     setup_instructions: List[str] = Field(default_factory=list)
     implementation_notes: str = ""
-    changed_files: List[str] = Field(default_factory=list)
     change_summary: str = ""
     mode: DeveloperMode = DeveloperMode.INITIAL_IMPLEMENTATION
+    validation_passed: bool = True
+    validation_issues: List[Dict[str, Any]] = Field(default_factory=list)
+
+    def model_post_init(self, __context: Any) -> None:
+        if self.files and not self.complete_project_files:
+            self.complete_project_files = list(self.files)
+        elif self.complete_project_files and not self.files:
+            self.files = list(self.complete_project_files)
 
 
 class Vulnerability(BaseModel):
@@ -258,6 +267,7 @@ class TestFailure(BaseModel):
     affected_files: List[str] = Field(default_factory=list)
     stack_trace: Optional[str] = None
     affected_component: Optional[str] = None
+    recommended_fix: Optional[str] = None
 
     def model_post_init(self, __context: Any) -> None:
         if not self.test and self.test_name:
@@ -279,7 +289,12 @@ class TestOutput(BaseModel):
     recommendations: List[str] = Field(default_factory=list)
     executed: bool = False
     overall_status: GateStatus = GateStatus.PENDING
+    status: Optional[str] = None
     severity: Optional[str] = None
+
+    def model_post_init(self, __context: Any) -> None:
+        if not self.status:
+            self.status = "PASS" if self.overall_status == GateStatus.PASS else "FAIL"
 
 
 class ReviewFinding(BaseModel):
