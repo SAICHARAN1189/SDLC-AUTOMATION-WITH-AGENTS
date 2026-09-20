@@ -72,6 +72,7 @@ Configure the following environment variables in the **Environment** tab of your
 ### 3. Application Security & Runtime
 | Variable | Value / Description | Sensitive? |
 | :--- | :--- | :--- |
+| `PYTHON_VERSION` | `3.11.9` (Pins stable Python 3.11 with pre-built binary wheels) | No |
 | `SECRET_KEY` | Random secret key (e.g. `openssl rand -hex 32`) | **Yes (Secret)** |
 | `FLASK_ENV` | `production` | No |
 | `DEMO_MODE` | `false` | No |

@@ -632,6 +632,7 @@ SDLC Nexus is architected for unified deployment as a single Render Web Service 
    - **Health Check Path**: `/health`
 
 2. **Required Environment Variables**:
+   - `PYTHON_VERSION`: `3.11.9` (Pins stable Python with pre-built binary wheels)
    - `DATABASE_URL`: Supabase connection string (`postgresql://...`)
    - `GEMINI_API_KEY`: Google Gemini API key
    - `GROQ_API_KEY`: Groq API key
