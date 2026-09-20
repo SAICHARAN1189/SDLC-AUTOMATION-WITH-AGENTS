@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_cors import CORS
 
 from backend.api.agents import agents_bp
@@ -17,13 +17,19 @@ from backend.api.health import health_bp
 from backend.api.models import models_bp
 from backend.api.projects import projects_bp
 from backend.api.qa import qa_bp
+from backend.api.responses import fail
 from backend.api.review import review_bp
 from backend.api.runner import runner_bp
 from backend.api.runs import runs_bp
 from backend.api.security import security_bp
 from backend.api.sse import sse_bp
 from backend.config.settings import settings
-from backend.persistence.database import init_db
+from backend.persistence.database import (
+    DatabaseConfigurationError,
+    DatabaseConnectionError,
+    check_database_health,
+    init_db,
+)
 
 
 def create_app() -> Flask:
@@ -31,6 +37,8 @@ def create_app() -> Flask:
     app.config["SECRET_KEY"] = settings.secret_key
     origins = settings.cors_origin_list
     CORS(app, origins=origins, supports_credentials=True)
+
+    # 1. API Blueprints
     app.register_blueprint(health_bp)
     app.register_blueprint(projects_bp)
     app.register_blueprint(runs_bp)
@@ -43,18 +51,16 @@ def create_app() -> Flask:
     app.register_blueprint(models_bp)
     app.register_blueprint(runner_bp)
 
-    @app.get("/")
-    def index():
+    # 2. Top-level Health Check (Render/Cloud Monitoring)
+    @app.get("/health")
+    def root_health():
+        db_healthy, _ = check_database_health()
         return {
-            "status": "online",
-            "service": "SDLC Nexus Autonomous Multi-Agent Platform API",
-            "version": "2.0.0",
-            "frontend_url": "http://localhost:5173",
-            "health_check": "/api/health",
+            "backend": "healthy",
+            "database": "healthy" if db_healthy else "unavailable",
         }
 
-    from backend.api.responses import fail
-    from backend.persistence.database import DatabaseConfigurationError, DatabaseConnectionError, check_database_health
+    # 3. Database Exception Handlers
     from sqlalchemy.exc import IntegrityError, OperationalError
 
     @app.errorhandler(DatabaseConfigurationError)
@@ -73,12 +79,31 @@ def create_app() -> Flask:
     def handle_db_integrity_error(exc):
         return fail("CONSTRAINT_VIOLATION", "Database constraint violation", status=400)
 
-    @app.get("/health")
-    def root_health():
-        db_healthy, _ = check_database_health()
+    # 4. Frontend Static & Client-Side SPA Routing
+    FRONTEND_DIST = ROOT / "frontend" / "dist"
+
+    @app.route("/", defaults={"path": ""})
+    @app.route("/<path:path>")
+    def serve_frontend(path: str):
+        # Never catch missing API routes or health endpoints with HTML
+        if path.startswith("api") or path == "health" or path.startswith("health/"):
+            return fail("NOT_FOUND", f"API route /{path} not found", status=404)
+
+        if FRONTEND_DIST.is_dir():
+            target_file = FRONTEND_DIST / path
+            if path and target_file.is_file():
+                return send_from_directory(str(FRONTEND_DIST), path)
+            index_file = FRONTEND_DIST / "index.html"
+            if index_file.is_file():
+                return send_from_directory(str(FRONTEND_DIST), "index.html")
+
+        # Fallback for standalone backend development
         return {
-            "backend": "healthy",
-            "database": "healthy" if db_healthy else "unavailable",
+            "status": "online",
+            "service": "SDLC Nexus Autonomous Multi-Agent Platform API",
+            "version": "2.0.0",
+            "health_check": "/api/health",
+            "notice": "Frontend build not detected in frontend/dist. Run 'npm run build' in frontend/ to generate it.",
         }
 
     init_db()

@@ -48,6 +48,7 @@
   - [Prerequisites](#prerequisites)
   - [Backend Setup](#backend-setup)
   - [Frontend Setup](#frontend-setup)
+  - [Single Web Service Production Deployment (Render)](#-single-web-service-production-deployment-render)
 - [📡 Complete API Reference](#-complete-api-reference)
 - [🧪 Automated Test Suites](#-automated-test-suites)
 - [📚 Deep-Dive Technical Documentation](#-deep-dive-technical-documentation)
@@ -611,6 +612,33 @@ Accessible via `/models`, the **Model Lab** provides a side-by-side benchmarking
    npm run dev
    ```
    Open your browser to `http://localhost:5173`.
+
+---
+
+### 🌐 Single Web Service Production Deployment (Render)
+
+SDLC Nexus is architected for unified deployment as a single Render Web Service serving both the compiled React frontend and Flask backend from **one public URL**:
+
+1. **Render Service Settings**:
+   - **Environment**: `Python`
+   - **Build Command**:
+     ```bash
+     pip install -r backend/requirements.txt && cd frontend && npm install && npm run build && cd ..
+     ```
+   - **Start Command**:
+     ```bash
+     gunicorn -k gthread --threads 8 --workers 2 --timeout 120 --bind 0.0.0.0:$PORT "backend.app:create_app()"
+     ```
+   - **Health Check Path**: `/health`
+
+2. **Required Environment Variables**:
+   - `DATABASE_URL`: Supabase connection string (`postgresql://...`)
+   - `GEMINI_API_KEY`: Google Gemini API key
+   - `GROQ_API_KEY`: Groq API key
+   - `SECRET_KEY`: Random secret string
+   - `FLASK_ENV`: `production`
+
+For comprehensive configuration and one-click blueprint setup, see [DEPLOYMENT.md](file:///c:/MY%20PROJECTS/SDLC%20AUTOMATION%20WITH%20AGENTS/DEPLOYMENT.md).
 
 ---
 
