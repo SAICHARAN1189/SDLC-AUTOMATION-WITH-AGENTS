@@ -36,6 +36,7 @@
 - [🧪 QA Testing & Interactive Terminal Execution Runner](#-qa-testing--interactive-terminal-execution-runner)
 - [🛑 Human-In-The-Loop (HITL) Manual Intervention](#-human-in-the-loop-hitl-manual-intervention)
 - [📦 Artifact Explorer & Project Deliverables](#-artifact-explorer--project-deliverables)
+  - [Live Codebase Runner & Automated Health Verification ("Start App")](#-live-codebase-runner--automated-health-verification-start-app)
 - [🗄️ Database Schema & Persistence Architecture (Supabase PostgreSQL)](#️-database-schema--persistence-architecture-supabase-postgresql)
   - [Entity Relationship Diagram](#entity-relationship-diagram)
   - [Sub-Millisecond Composite Indexing](#sub-millisecond-composite-indexing)
@@ -374,6 +375,20 @@ Accessible via `/artifacts?run_id=<run_id>`, the Artifact Explorer packages all 
 7. **Review Sign-Off**: Senior engineering gate review, architectural consistency analysis, and formal approval status.
 8. **Export Deliverables JSON**: One-click download of all pipeline artifacts packaged as structured JSON.
 
+### 🚀 Live Codebase Runner & Automated Health Verification ("Start App")
+
+The **Generated Codebase** tab features a full-stack local application execution engine:
+
+- **One-Click "Start App" Execution**: Automatically detects project architecture (Node.js Express, Python Flask/FastAPI, or Static Web Apps), provisions an isolated temporary sandbox (`sdlc_nexus_app_<run_id>`), and dynamically binds an available ephemeral port.
+- **Smart Static & Mock REST Fallback**: In environments where native dependencies (e.g. Express) are not pre-installed, an embedded smart server immediately serves static assets and dynamically resolves discovered API endpoints with realistic data.
+- **Automated Health & Smoke Probes**: Upon server startup, automated HTTP probes execute against the application root (`/`) and discovered API routes (e.g. `GET /api/v1/health/categories`, `POST /api/v1/health/calculate`, `GET /api/v1/health/history`), verifying HTTP 200 OK status codes and measuring millisecond response latency.
+- **Interactive Multi-View Workspace**:
+  - **Source Files**: Browse all project files with language badges, line counters, and one-click copy.
+  - **Live App Preview**: An interactive embedded browser window rendering the running application live on its local port with address bar and refresh/open-in-tab controls.
+  - **Health Checks**: Detailed diagnostic cards displaying probed endpoint routes, HTTP response status badges, request latencies, and response previews.
+  - **Console Logs**: Real-time terminal output streaming server startup logs, probe results, and stdout/stderr events.
+- **Runtime Lifecycle Management**: Controls for **Stop App**, **Restart App**, and **Open in Tab**.
+
 ---
 
 ## 🗄️ Database Schema & Persistence Architecture (Supabase PostgreSQL)
@@ -620,6 +635,9 @@ Accessible via `/models`, the **Model Lab** provides a side-by-side benchmarking
 | `GET` | `/api/security/<run_id>` | Detailed security findings and CWE classifications for a specific run |
 | `GET` | `/api/tests/<run_id>` | Full QA test results, execution status, and pytest terminal outputs |
 | `GET` | `/api/review/<run_id>` | Senior code review sign-off and architectural consistency assessment |
+| `POST` | `/api/runs/<run_id>/app/start` | Launch generated codebase in isolated sandbox & run automated health checks |
+| `POST` | `/api/runs/<run_id>/app/stop` | Terminate running app sandbox process and release local port |
+| `GET` | `/api/runs/<run_id>/app/status` | Fetch real-time app status, health probe latency results, and streamed logs |
 | `POST` | `/api/models/compare` | Run side-by-side model latency and reasoning benchmark in Model Lab |
 
 ---
