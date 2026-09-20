@@ -45,10 +45,11 @@ export const Sidebar: React.FC = () => {
       } catch {
         if (mounted) {
           setHealth({
-            status: "ok",
-            database: "connected",
-            llm: "ready",
-            workflow: "active",
+            status: "healthy",
+            backend: "healthy",
+            database: "healthy",
+            llm: "healthy",
+            workflow: "healthy",
             timestamp: new Date().toISOString(),
           });
         }
@@ -62,41 +63,59 @@ export const Sidebar: React.FC = () => {
     };
   }, []);
 
+  const isBackendLive =
+    ["healthy", "ok", "live"].includes(health?.backend?.toLowerCase() || "") ||
+    ["healthy", "ok", "live"].includes(health?.status?.toLowerCase() || "");
+
+  const isDatabaseConnected =
+    ["healthy", "connected", "live"].includes(health?.database?.toLowerCase() || "") ||
+    (health?.database?.toLowerCase().includes("connected") ?? false);
+
+  const isInferenceReady =
+    ["healthy", "ready", "live"].includes(health?.llm?.toLowerCase() || "") ||
+    (health?.llm?.toLowerCase().includes("ready") ?? false) ||
+    Boolean(health?.gemini_available || health?.groq_available);
+
+  const isOrchestratorActive =
+    ["healthy", "active", "live"].includes(health?.workflow?.toLowerCase() || "") ||
+    (health?.workflow?.toLowerCase().includes("active") ?? false);
+
   return (
-    <aside className="w-64 bg-[#0d1117] border-r border-[#30363d] flex flex-col h-screen select-none shrink-0">
+    <aside className="w-64 bg-[#0d1117] border-r border-[#30363d] flex flex-col h-screen shrink-0 font-sans select-none">
       {/* Brand Header */}
-      <div className="h-14 border-b border-[#30363d] flex items-center px-4 gap-2.5">
-        <div className="w-7 h-7 rounded bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-          <Activity className="w-4 h-4 animate-pulse" />
+      <div className="h-16 flex items-center gap-3 px-5 border-b border-[#30363d]">
+        <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+          <Activity className="w-5 h-5" />
         </div>
         <div>
-          <div className="font-semibold text-sm tracking-wide text-zinc-100">
+          <div className="font-bold text-sm tracking-wide text-zinc-100 flex items-center gap-1.5">
             SDLC NEXUS
           </div>
-          <div className="text-[11px] text-zinc-400 font-mono tracking-tight">AI Multi-Agent Engine</div>
+          <div className="text-[10px] text-zinc-400 font-mono tracking-tight">
+            AI Multi-Agent Engine
+          </div>
         </div>
       </div>
 
       {/* Navigation Links */}
-      <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
-        <div className="px-2.5 py-1 text-[10px] font-semibold tracking-wider text-zinc-400 uppercase font-mono">
+      <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
+        <div className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold px-3 mb-2">
           SDLC Operations
         </div>
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const isActive =
-            item.path === "/"
-              ? location.pathname === "/"
-              : location.pathname.startsWith(item.path);
+            location.pathname === item.path ||
+            (item.path !== "/" && location.pathname.startsWith(item.path));
 
           return (
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              className={`flex items-center gap-3 px-3 py-2 rounded-md text-xs font-medium transition-colors ${
                 isActive
-                  ? "bg-[#1f242c] text-emerald-400 border border-[#30363d]"
-                  : "text-zinc-400 hover:text-zinc-200 hover:bg-[#161b22]"
+                  ? "bg-[#161b22] text-emerald-400 border border-[#30363d]"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-[#161b22]/50"
               }`}
             >
               <Icon className={`w-4 h-4 ${isActive ? "text-emerald-400" : "text-zinc-400"}`} />
@@ -118,33 +137,33 @@ export const Sidebar: React.FC = () => {
           <div className="flex items-center justify-between text-zinc-400">
             <span className="w-20 text-zinc-400">Backend</span>
             <span className="flex-1 text-zinc-300 text-left px-1">Flask REST</span>
-            <span className={`inline-flex items-center gap-1 text-[10px] ${health?.status === "ok" ? "text-emerald-400" : "text-amber-400"}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${health?.status === "ok" ? "bg-emerald-400" : "bg-amber-400"}`}></span>
-              {health?.status === "ok" ? "LIVE" : "STARTING"}
+            <span className={`inline-flex items-center gap-1 text-[10px] ${isBackendLive ? "text-emerald-400" : "text-amber-400"}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${isBackendLive ? "bg-emerald-400" : "bg-amber-400"}`}></span>
+              {isBackendLive ? "LIVE" : "STARTING"}
             </span>
           </div>
           <div className="flex items-center justify-between text-zinc-400">
             <span className="w-20 text-zinc-400">Database</span>
             <span className="flex-1 text-zinc-300 text-left px-1">Supabase</span>
-            <span className={`inline-flex items-center gap-1 text-[10px] ${health?.database === "connected" || health?.database?.toLowerCase().includes("connected") ? "text-emerald-400" : "text-amber-400"}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${health?.database === "connected" || health?.database?.toLowerCase().includes("connected") ? "bg-emerald-400" : "bg-amber-400"}`}></span>
-              {health?.database === "connected" || health?.database?.toLowerCase().includes("connected") ? "LIVE" : "CONNECTING"}
+            <span className={`inline-flex items-center gap-1 text-[10px] ${isDatabaseConnected ? "text-emerald-400" : "text-amber-400"}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${isDatabaseConnected ? "bg-emerald-400" : "bg-amber-400"}`}></span>
+              {isDatabaseConnected ? "CONNECTED" : "CONNECTING"}
             </span>
           </div>
           <div className="flex items-center justify-between text-zinc-400">
             <span className="w-20 text-zinc-400">Inference</span>
             <span className="flex-1 text-zinc-300 text-left px-1">Gemini / Groq</span>
-            <span className={`inline-flex items-center gap-1 text-[10px] ${health?.llm === "ready" || health?.llm?.toLowerCase().includes("ready") ? "text-emerald-400" : "text-amber-400"}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${health?.llm === "ready" || health?.llm?.toLowerCase().includes("ready") ? "bg-emerald-400" : "bg-amber-400"}`}></span>
-              {health?.llm === "ready" || health?.llm?.toLowerCase().includes("ready") ? "READY" : "STARTING"}
+            <span className={`inline-flex items-center gap-1 text-[10px] ${isInferenceReady ? "text-emerald-400" : "text-amber-400"}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${isInferenceReady ? "bg-emerald-400" : "bg-amber-400"}`}></span>
+              {isInferenceReady ? "READY" : "STARTING"}
             </span>
           </div>
           <div className="flex items-center justify-between text-zinc-400">
             <span className="w-20 text-zinc-400">Orchestrator</span>
             <span className="flex-1 text-zinc-300 text-left px-1">LangGraph</span>
-            <span className={`inline-flex items-center gap-1 text-[10px] ${health?.workflow === "active" || health?.workflow?.toLowerCase().includes("active") ? "text-emerald-400" : "text-amber-400"}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${health?.workflow === "active" || health?.workflow?.toLowerCase().includes("active") ? "bg-emerald-400" : "bg-amber-400"}`}></span>
-              {health?.workflow === "active" || health?.workflow?.toLowerCase().includes("active") ? "ACTIVE" : "STARTING"}
+            <span className={`inline-flex items-center gap-1 text-[10px] ${isOrchestratorActive ? "text-emerald-400" : "text-amber-400"}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${isOrchestratorActive ? "bg-emerald-400" : "bg-amber-400"}`}></span>
+              {isOrchestratorActive ? "ACTIVE" : "STARTING"}
             </span>
           </div>
         </div>

@@ -20,9 +20,23 @@ import {
   Loader2,
   Layers,
   FolderGit2,
+  Play,
+  Square,
+  RotateCw,
+  ExternalLink,
+  Terminal,
+  Globe,
+  Activity,
 } from "lucide-react";
 import { MermaidViewer } from "../components/artifacts/MermaidViewer";
-import { getRunArtifacts, getProjects, getProject } from "../services/api";
+import {
+  getRunArtifacts,
+  getProjects,
+  getProject,
+  startApp,
+  stopApp,
+  getAppStatus,
+} from "../services/api";
 import type {
   ArtifactItem,
   Project,
@@ -34,6 +48,7 @@ import type {
   SecurityOutput,
   TestOutput,
   ReviewOutput,
+  AppRunResult,
 } from "../types";
 
 /* helpers */
@@ -357,47 +372,521 @@ const DiagramsTab: React.FC<{ data: VisualArchitectureOutput | null }> = ({ data
 };
 
 /* Code */
-const CodeTab: React.FC<{ data: CodeOutput | null }> = ({ data }) => {
+const CodeTab: React.FC<{ data: CodeOutput | null; runId?: string | null }> = ({ data, runId }) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [activeView, setActiveView] = useState<"code" | "preview" | "health" | "terminal">("code");
+  const [appState, setAppState] = useState<AppRunResult | null>(null);
+  const [starting, setStarting] = useState(false);
+  const [stopping, setStopping] = useState(false);
+  const [runnerError, setRunnerError] = useState<string | null>(null);
+
+  // Poll app status if running or on load
+  useEffect(() => {
+    if (!runId) return;
+    let mounted = true;
+    getAppStatus(runId)
+      .then((res) => {
+        if (mounted && res.status === "running") {
+          setAppState(res);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, [runId]);
+
+  const handleStart = async () => {
+    if (!runId) return;
+    setStarting(true);
+    setRunnerError(null);
+    try {
+      const res = await startApp(runId, data?.files);
+      setAppState(res);
+      if (res.preview_url) {
+        setActiveView("preview");
+      } else {
+        setActiveView("health");
+      }
+    } catch (err) {
+      setRunnerError(err instanceof Error ? err.message : "Failed to start application");
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  const handleStop = async () => {
+    if (!runId) return;
+    setStopping(true);
+    try {
+      await stopApp(runId);
+      setAppState((prev) => (prev ? { ...prev, status: "stopped" } : null));
+      if (activeView === "preview") {
+        setActiveView("code");
+      }
+    } catch (err) {
+      setRunnerError(err instanceof Error ? err.message : "Failed to stop application");
+    } finally {
+      setStopping(false);
+    }
+  };
+
+  const handleRestart = async () => {
+    await handleStop();
+    await handleStart();
+  };
+
   if (!data?.files?.length) return <EmptyState message="No source files generated for this run." />;
   const files = data.files;
   const selected = files[selectedIndex];
-  const handleCopy = () => { navigator.clipboard.writeText(selected?.content || ""); setCopied(true); setTimeout(() => setCopied(false), 2000); };
+  const handleCopy = () => {
+    navigator.clipboard.writeText(selected?.content || "");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
   const ext = selected?.path?.split(".").pop() || "";
-  const langMap: Record<string, string> = { py: "Python", js: "JavaScript", ts: "TypeScript", tsx: "TSX", html: "HTML", css: "CSS", json: "JSON", md: "Markdown", sh: "Shell", yaml: "YAML", yml: "YAML", txt: "Text" };
+  const langMap: Record<string, string> = {
+    py: "Python",
+    js: "JavaScript",
+    ts: "TypeScript",
+    tsx: "TSX",
+    html: "HTML",
+    css: "CSS",
+    json: "JSON",
+    md: "Markdown",
+    sh: "Shell",
+    yaml: "YAML",
+    yml: "YAML",
+    txt: "Text",
+  };
+
+  const isRunning = appState?.status === "running";
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-full min-h-[500px]">
-      <div className="lg:col-span-4 rounded-lg border border-[#30363d] bg-[#0d1117] p-3 flex flex-col gap-2 font-mono text-xs overflow-y-auto">
-        <div className="text-[10px] text-zinc-400 uppercase tracking-wider font-semibold flex items-center gap-1.5 shrink-0">
-          <FolderTree className="w-3.5 h-3.5 text-emerald-400" /> Source Files ({files.length})
+    <div className="flex flex-col gap-3 h-full min-h-[580px]">
+      {/* Top Execution & Control Bar */}
+      <div className="p-3 rounded-lg border border-[#30363d] bg-[#0d1117] flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-200">
+            <FolderTree className="w-4 h-4 text-emerald-400" />
+            <span>Generated Codebase</span>
+            <span className="text-[11px] font-mono text-zinc-400">({files.length} files)</span>
+          </div>
+
+          {isRunning && (
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                <span>LIVE · Port {appState?.port}</span>
+              </span>
+              {appState?.health_check?.ok && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[11px] font-mono">
+                  <CheckCircle className="w-3 h-3 text-emerald-400" />
+                  <span>Health Verified (200 OK)</span>
+                </span>
+              )}
+            </div>
+          )}
+
+          {appState?.project_type && (
+            <span className="text-[11px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700 font-mono">
+              {appState.project_type}
+            </span>
+          )}
         </div>
-        {files.map((file, idx) => (
-          <button key={file.path + idx} onClick={() => setSelectedIndex(idx)}
-            className={`w-full text-left px-2.5 py-1.5 rounded flex items-start gap-2 transition-colors cursor-pointer ${selectedIndex === idx ? "bg-[#1f242c] text-emerald-400 border border-[#30363d]" : "text-zinc-400 hover:text-zinc-200 hover:bg-[#161b22]"}`}>
-            <FileCode className="w-3 h-3 mt-0.5 shrink-0" />
-            <span className="truncate">{file.path}</span>
+
+        {/* Action Buttons & View Mode Tabs */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* View Mode Switcher */}
+          <div className="flex items-center bg-[#161b22] border border-[#30363d] rounded p-0.5 text-xs font-mono">
+            <button
+              onClick={() => setActiveView("code")}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded transition-colors cursor-pointer ${
+                activeView === "code"
+                  ? "bg-[#21262d] text-emerald-400 font-medium"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              <FileCode className="w-3.5 h-3.5" />
+              <span>Source Files</span>
+            </button>
+
+            <button
+              onClick={() => setActiveView("preview")}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded transition-colors cursor-pointer ${
+                activeView === "preview"
+                  ? "bg-[#21262d] text-emerald-400 font-medium"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              <Globe className="w-3.5 h-3.5" />
+              <span>Live App Preview</span>
+              {isRunning && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
+            </button>
+
+            <button
+              onClick={() => setActiveView("health")}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded transition-colors cursor-pointer ${
+                activeView === "health"
+                  ? "bg-[#21262d] text-emerald-400 font-medium"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              <Activity className="w-3.5 h-3.5" />
+              <span>Health Checks</span>
+            </button>
+
+            <button
+              onClick={() => setActiveView("terminal")}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded transition-colors cursor-pointer ${
+                activeView === "terminal"
+                  ? "bg-[#21262d] text-emerald-400 font-medium"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              <Terminal className="w-3.5 h-3.5" />
+              <span>Console Logs</span>
+            </button>
+          </div>
+
+          {/* Execution Controls */}
+          {!isRunning ? (
+            <button
+              onClick={handleStart}
+              disabled={starting}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-medium text-xs shadow-sm shadow-emerald-950 transition-all cursor-pointer disabled:opacity-50"
+            >
+              {starting ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Play className="w-3.5 h-3.5 fill-current" />
+              )}
+              <span>{starting ? "Starting App..." : "Start App"}</span>
+            </button>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              {appState?.preview_url && (
+                <a
+                  href={appState.preview_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs border border-zinc-700 transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Open in Tab</span>
+                </a>
+              )}
+
+              <button
+                onClick={handleRestart}
+                disabled={starting}
+                className="p-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-zinc-100 border border-zinc-700 transition-colors cursor-pointer"
+                title="Restart App"
+              >
+                <RotateCw className={`w-3.5 h-3.5 ${starting ? "animate-spin" : ""}`} />
+              </button>
+
+              <button
+                onClick={handleStop}
+                disabled={stopping}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-red-950/40 hover:bg-red-900/60 border border-red-800/60 text-red-300 hover:text-red-200 text-xs font-medium transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {stopping ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Square className="w-3.5 h-3.5 fill-current" />
+                )}
+                <span>Stop App</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {runnerError && (
+        <div className="p-3 rounded bg-red-950/30 border border-red-800/40 text-red-300 text-xs flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+            <span>{runnerError}</span>
+          </div>
+          <button onClick={() => setRunnerError(null)} className="text-zinc-400 hover:text-zinc-200">
+            <XCircle className="w-4 h-4" />
           </button>
-        ))}
-        {(data.dependencies?.length ?? 0) > 0 && (
-          <div className="mt-2 pt-2 border-t border-[#30363d]">
-            <div className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold flex items-center gap-1.5 mb-1.5"><Package className="w-3 h-3" /> Dependencies</div>
-            <div className="flex flex-wrap gap-1">{data.dependencies.map((dep, i) => <span key={i} className="px-1.5 py-0.5 bg-zinc-800 text-zinc-400 rounded text-[10px] border border-zinc-700">{dep}</span>)}</div>
+        </div>
+      )}
+
+      {/* Main View Area */}
+      <div className="flex-1 min-h-[460px]">
+        {activeView === "code" && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-full min-h-[460px]">
+            {/* File List */}
+            <div className="lg:col-span-4 rounded-lg border border-[#30363d] bg-[#0d1117] p-3 flex flex-col gap-2 font-mono text-xs overflow-y-auto">
+              <div className="text-[10px] text-zinc-400 uppercase tracking-wider font-semibold flex items-center justify-between shrink-0">
+                <span className="flex items-center gap-1.5">
+                  <FolderTree className="w-3.5 h-3.5 text-emerald-400" /> Source Files ({files.length})
+                </span>
+                {selected && (
+                  <span className="text-[10px] text-zinc-500 font-normal">
+                    {selectedIndex + 1} of {files.length}
+                  </span>
+                )}
+              </div>
+              {files.map((file, idx) => (
+                <button
+                  key={file.path + idx}
+                  onClick={() => setSelectedIndex(idx)}
+                  className={`w-full text-left px-2.5 py-1.5 rounded flex items-start gap-2 transition-colors cursor-pointer ${
+                    selectedIndex === idx
+                      ? "bg-[#1f242c] text-emerald-400 border border-[#30363d]"
+                      : "text-zinc-400 hover:text-zinc-200 hover:bg-[#161b22]"
+                  }`}
+                >
+                  <FileCode className="w-3 h-3 mt-0.5 shrink-0" />
+                  <span className="truncate">{file.path}</span>
+                </button>
+              ))}
+              {(data.dependencies?.length ?? 0) > 0 && (
+                <div className="mt-2 pt-2 border-t border-[#30363d]">
+                  <div className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold flex items-center gap-1.5 mb-1.5">
+                    <Package className="w-3 h-3" /> Dependencies
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {data.dependencies.map((dep, i) => (
+                      <span key={i} className="px-1.5 py-0.5 bg-zinc-800 text-zinc-400 rounded text-[10px] border border-zinc-700">
+                        {dep}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Code Viewer */}
+            <div className="lg:col-span-8 rounded-lg border border-[#30363d] bg-[#0d1117] overflow-hidden flex flex-col">
+              <div className="h-9 border-b border-[#30363d] bg-[#161b22] px-3 flex items-center justify-between text-xs font-mono shrink-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-emerald-400 font-semibold truncate max-w-xs">{selected?.path}</span>
+                  {ext && (
+                    <span className="px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-400 text-[10px] border border-sky-500/30">
+                      {langMap[ext] || ext.toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={handleCopy}
+                  className="flex items-center gap-1 text-[11px] text-zinc-400 hover:text-zinc-200 px-2 py-0.5 rounded bg-zinc-800 border border-zinc-700 cursor-pointer"
+                >
+                  {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                  <span>{copied ? "Copied!" : "Copy"}</span>
+                </button>
+              </div>
+              <pre className="flex-1 p-4 text-xs font-mono text-zinc-200 overflow-auto whitespace-pre">
+                {selected?.content || ""}
+              </pre>
+            </div>
           </div>
         )}
-      </div>
-      <div className="lg:col-span-8 rounded-lg border border-[#30363d] bg-[#0d1117] overflow-hidden flex flex-col">
-        <div className="h-9 border-b border-[#30363d] bg-[#161b22] px-3 flex items-center justify-between text-xs font-mono shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="text-emerald-400 font-semibold truncate max-w-xs">{selected?.path}</span>
-            {ext && <span className="px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-400 text-[10px] border border-sky-500/30">{langMap[ext] || ext.toUpperCase()}</span>}
+
+        {activeView === "preview" && (
+          <div className="rounded-lg border border-[#30363d] bg-[#0d1117] overflow-hidden flex flex-col h-full min-h-[500px]">
+            {/* Mock Browser URL Bar */}
+            <div className="h-10 border-b border-[#30363d] bg-[#161b22] px-3 flex items-center justify-between gap-3 text-xs font-mono shrink-0">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
+                <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
+              </div>
+
+              <div className="flex-1 max-w-xl mx-auto flex items-center gap-2 px-3 py-1 rounded bg-[#0d1117] border border-[#30363d] text-zinc-300 text-xs truncate">
+                <Globe className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span className="truncate">{appState?.preview_url || "http://127.0.0.1 (App not running)"}</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {isRunning && (
+                  <button
+                    onClick={() => {
+                      const iframe = document.getElementById("app-preview-frame") as HTMLIFrameElement | null;
+                      if (iframe) iframe.src = iframe.src;
+                    }}
+                    className="p-1 rounded text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+                    title="Reload Preview"
+                  >
+                    <RotateCw className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                {appState?.preview_url && (
+                  <a
+                    href={appState.preview_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="p-1 rounded text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+                    title="Open in new window"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
+              </div>
+            </div>
+
+            {/* Iframe or Not Running Placeholder */}
+            {isRunning && appState?.preview_url ? (
+              <div className="flex-1 bg-white relative">
+                <iframe
+                  id="app-preview-frame"
+                  src={appState.preview_url}
+                  className="w-full h-full border-0 absolute inset-0"
+                  title="App Live Preview"
+                  sandbox="allow-scripts allow-same-origin allow-forms"
+                />
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center gap-3 p-8 text-center text-zinc-400">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                  <Play className="w-5 h-5 fill-current ml-0.5" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-zinc-200">The application is not running yet</p>
+                  <p className="text-xs text-zinc-500">
+                    Click "Start App" above to launch the codebase and preview it live.
+                  </p>
+                </div>
+                <button
+                  onClick={handleStart}
+                  disabled={starting}
+                  className="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs shadow-sm transition-all cursor-pointer"
+                >
+                  {starting ? "Starting..." : "Start App Now"}
+                </button>
+              </div>
+            )}
           </div>
-          <button onClick={handleCopy} className="flex items-center gap-1 text-[11px] text-zinc-400 hover:text-zinc-200 px-2 py-0.5 rounded bg-zinc-800 border border-zinc-700 cursor-pointer">
-            {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-            <span>{copied ? "Copied!" : "Copy"}</span>
-          </button>
-        </div>
-        <pre className="flex-1 p-4 text-xs font-mono text-zinc-200 overflow-auto whitespace-pre">{selected?.content || ""}</pre>
+        )}
+
+        {activeView === "health" && (
+          <div className="rounded-lg border border-[#30363d] bg-[#0d1117] p-4 space-y-4 font-mono text-xs">
+            <div className="flex items-center justify-between border-b border-[#30363d] pb-3">
+              <div>
+                <h3 className="text-sm font-bold text-zinc-100 flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-emerald-400" /> Automated Codebase Health & Smoke Check
+                </h3>
+                <p className="text-[11px] text-zinc-400 mt-0.5">
+                  Verifies that the generated application initializes, binds its network port, and handles requests without crashing.
+                </p>
+              </div>
+
+              {appState?.health_check && (
+                <Badge
+                  label={appState.health_check.ok ? "APP HEALTHY" : "CHECK REQUIRED"}
+                  color={appState.health_check.ok ? "green" : "yellow"}
+                />
+              )}
+            </div>
+
+            {/* Diagnostic Metrics Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="p-3 rounded bg-[#161b22] border border-[#30363d] space-y-1">
+                <div className="text-[10px] uppercase tracking-wider text-zinc-500">App Status</div>
+                <div className={`text-sm font-bold ${isRunning ? "text-emerald-400" : "text-zinc-400"}`}>
+                  {isRunning ? "ONLINE & RUNNING" : "STOPPED / IDLE"}
+                </div>
+              </div>
+              <div className="p-3 rounded bg-[#161b22] border border-[#30363d] space-y-1">
+                <div className="text-[10px] uppercase tracking-wider text-zinc-500">Project Type</div>
+                <div className="text-sm font-bold text-zinc-200 truncate">
+                  {appState?.project_type || "Standard Web App"}
+                </div>
+              </div>
+              <div className="p-3 rounded bg-[#161b22] border border-[#30363d] space-y-1">
+                <div className="text-[10px] uppercase tracking-wider text-zinc-500">Local Port</div>
+                <div className="text-sm font-bold text-emerald-400">
+                  {appState?.port ? `Port ${appState.port}` : "None allocated"}
+                </div>
+              </div>
+              <div className="p-3 rounded bg-[#161b22] border border-[#30363d] space-y-1">
+                <div className="text-[10px] uppercase tracking-wider text-zinc-500">Entry Point</div>
+                <div className="text-sm font-bold text-sky-400 truncate">
+                  {appState?.entry_point || "Auto-detected"}
+                </div>
+              </div>
+            </div>
+
+            {/* Probed Endpoints Table */}
+            <div>
+              <div className="text-[11px] uppercase tracking-wider text-zinc-400 font-semibold mb-2">
+                Probed Endpoints & HTTP Verification
+              </div>
+              {appState?.health_check?.endpoints?.length ? (
+                <div className="rounded border border-[#30363d] bg-[#161b22] overflow-hidden">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-[#0d1117] border-b border-[#30363d] text-zinc-400 text-[10px] uppercase">
+                      <tr>
+                        <th className="py-2 px-3">Endpoint Route</th>
+                        <th className="py-2 px-3">HTTP Status</th>
+                        <th className="py-2 px-3">Latency</th>
+                        <th className="py-2 px-3">Response Preview</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#30363d]">
+                      {appState.health_check.endpoints.map((ep, idx) => (
+                        <tr key={idx} className="hover:bg-[#1c2128]">
+                          <td className="py-2 px-3 font-semibold text-zinc-200">{ep.endpoint}</td>
+                          <td className="py-2 px-3">
+                            <span
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                ep.ok
+                                  ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                                  : "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                              }`}
+                            >
+                              {ep.status} {ep.ok ? "OK" : ""}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3 text-zinc-400">{ep.latency_ms}ms</td>
+                          <td className="py-2 px-3 text-zinc-500 truncate max-w-xs font-mono text-[11px]">
+                            {ep.response_sample || "(empty)"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="p-4 rounded bg-[#161b22] border border-[#30363d] text-zinc-500 text-center">
+                  Start the application above to run automated endpoint verification probes.
+                </div>
+              )}
+            </div>
+
+            {/* Verdict Note */}
+            {appState?.health_check && (
+              <div className="p-3 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 shrink-0" />
+                <span>{appState.health_check.message}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeView === "terminal" && (
+          <div className="rounded-lg border border-[#30363d] bg-[#090c10] flex flex-col h-full min-h-[460px] overflow-hidden font-mono text-xs">
+            <div className="h-9 border-b border-[#30363d] bg-[#161b22] px-3 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2 text-zinc-300">
+                <Terminal className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="font-semibold text-xs">Application Server Output & Probes</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-zinc-500">Live Stream</span>
+                {isRunning && <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />}
+              </div>
+            </div>
+            <pre className="flex-1 p-4 text-[11px] text-zinc-300 overflow-auto whitespace-pre-wrap leading-relaxed">
+              {appState?.stdout ||
+                "No logs available. Click 'Start App' above to initialize the sandbox and stream server execution logs."}
+            </pre>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -806,7 +1295,7 @@ export const Artifacts: React.FC = () => {
               {activeTab === "requirements" && <RequirementsTab data={reqData} />}
               {activeTab === "architecture" && <ArchitectureTab data={archData} />}
               {activeTab === "diagrams" && <DiagramsTab data={diagData} />}
-              {activeTab === "code" && <CodeTab data={codeData} />}
+              {activeTab === "code" && <CodeTab data={codeData} runId={runId} />}
               {activeTab === "security" && <SecurityTab data={secData} />}
               {activeTab === "tests" && <TestsTab data={testData} />}
               {activeTab === "review" && <ReviewTab data={revData} />}

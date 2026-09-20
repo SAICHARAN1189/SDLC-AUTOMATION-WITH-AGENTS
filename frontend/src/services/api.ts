@@ -3,6 +3,7 @@ import type {
   ApiResponse,
   ArtifactItem,
   HealthStatus,
+  AppRunResult,
   ModelComparisonOutput,
   PipelineRun,
   Project,
@@ -273,3 +274,28 @@ export function subscribeToRunEvents(
     eventSource.close();
   };
 }
+
+// App Runner & Codebase Live Execution API
+export async function startApp(
+  runId: string,
+  files?: { path: string; content: string }[]
+): Promise<AppRunResult> {
+  return api<AppRunResult>(`/api/runs/${runId}/app/start`, {
+    method: "POST",
+    body: JSON.stringify({ files }),
+  });
+}
+
+export async function stopApp(
+  runId: string
+): Promise<{ success: boolean; status: string; message: string }> {
+  return api<{ success: boolean; status: string; message: string }>(
+    `/api/runs/${runId}/app/stop`,
+    { method: "POST" }
+  );
+}
+
+export async function getAppStatus(runId: string): Promise<AppRunResult> {
+  return api<AppRunResult>(`/api/runs/${runId}/app/status`);
+}
+

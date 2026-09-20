@@ -275,8 +275,41 @@ export type ArtifactItem = {
 
 export type HealthStatus = {
   status: string;
+  backend?: string;
   database: string;
   llm: string;
   workflow: string;
   timestamp: string;
+  provider?: string;
+  gemini_available?: boolean;
+  groq_available?: boolean;
+  demo_mode?: boolean;
 };
+
+export type AppEndpointCheck = {
+  endpoint: string;
+  status: number | string;
+  ok: boolean;
+  response_sample?: string;
+  latency_ms?: number;
+};
+
+export type AppRunResult = {
+  success: boolean;
+  status: "running" | "stopped" | "failed" | "checking" | "idle";
+  project_type: string;
+  entry_point?: string;
+  port?: number;
+  preview_url?: string;
+  health_check?: {
+    ok: boolean;
+    status_code?: number;
+    message: string;
+    endpoints: AppEndpointCheck[];
+  };
+  stdout: string;
+  stderr: string;
+  started_at?: string;
+  error?: string;
+};
+

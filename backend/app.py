@@ -18,6 +18,7 @@ from backend.api.models import models_bp
 from backend.api.projects import projects_bp
 from backend.api.qa import qa_bp
 from backend.api.review import review_bp
+from backend.api.runner import runner_bp
 from backend.api.runs import runs_bp
 from backend.api.security import security_bp
 from backend.api.sse import sse_bp
@@ -40,6 +41,7 @@ def create_app() -> Flask:
     app.register_blueprint(qa_bp)
     app.register_blueprint(review_bp)
     app.register_blueprint(models_bp)
+    app.register_blueprint(runner_bp)
 
     @app.get("/")
     def index():
