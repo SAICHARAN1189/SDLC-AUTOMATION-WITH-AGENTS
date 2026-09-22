@@ -9,6 +9,7 @@ from backend.orchestration.events import emit
 from backend.orchestration.state import ProjectState, update_live_state
 from backend.persistence import repositories
 from backend.tools.artifact_tools import artifact_storage_path, files_to_zip_bytes, maybe_upload_bytes
+from backend.utils.logging import logger
 
 
 def _message(sender: str, receiver: str, message_type: str, content: str, recommended_action: str | None = None, severity: str | None = None, affected_files: list[str] | None = None) -> dict[str, Any]:
