@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import re
+import shutil
 import socket
 import subprocess
 import sys
@@ -20,6 +21,39 @@ from typing import Any, Optional
 from backend.tools.file_tools import write_files
 
 logger = logging.getLogger("sdlc_nexus.runner")
+
+# ---------------------------------------------------------------------------
+# Platform-aware command resolution
+# On Windows, npm/npx are .cmd batch scripts and cannot be invoked directly
+# via subprocess without shell=True unless the full .cmd path is used.
+# ---------------------------------------------------------------------------
+_IS_WIN = sys.platform == "win32"
+
+
+def _resolve_cmd(name: str) -> str:
+    """Return the full path (or best name) for a CLI tool."""
+    # Try exact name first (works on Linux/macOS)
+    found = shutil.which(name)
+    if found:
+        return found
+    if _IS_WIN:
+        # On Windows, npm/npx ship as .cmd batch files
+        found_cmd = shutil.which(name + ".cmd")
+        if found_cmd:
+            return found_cmd
+        # Hard-coded common install locations as last resort
+        for candidate in [
+            Path(os.environ.get("APPDATA", "")) / "npm" / (name + ".cmd"),
+            Path("C:/Program Files/nodejs") / (name + ".cmd"),
+            Path("C:/Program Files (x86)/nodejs") / (name + ".cmd"),
+        ]:
+            if candidate.is_file():
+                return str(candidate)
+    return name  # fall back to bare name; let subprocess raise a useful error
+
+
+NPM_CMD = _resolve_cmd("npm")
+NODE_CMD = _resolve_cmd("node")
 
 
 def find_free_port() -> int:
@@ -375,11 +409,12 @@ def start_app_runner(run_id: str, files: list[dict[str, str]]) -> dict[str, Any]
             # Check syntax first
             try:
                 syntax_check = subprocess.run(
-                    ["node", "-c", entry_point],
+                    [NODE_CMD, "-c", entry_point],
                     cwd=sandbox_path,
                     capture_output=True,
                     text=True,
                     timeout=5,
+                    shell=_IS_WIN,
                 )
                 if syntax_check.returncode == 0:
                     app_info.logs.append(f"[Runner] Node.js syntax verification: PASS ({entry_point})")
@@ -392,13 +427,15 @@ def start_app_runner(run_id: str, files: list[dict[str, str]]) -> dict[str, Any]
             pkg_json = sandbox_path / "package.json"
             if pkg_json.is_file():
                 try:
-                    app_info.logs.append("[Runner] Running npm install...")
+                    app_info.logs.append(f"[Runner] Running npm install (cmd: {NPM_CMD})...")
                     npm_result = subprocess.run(
-                        ["npm", "install", "--prefer-offline", "--no-audit", "--no-fund"],
+                        [NPM_CMD, "install", "--prefer-offline", "--no-audit", "--no-fund"],
                         cwd=sandbox_path,
                         capture_output=True,
                         text=True,
                         timeout=120,
+                        # shell=True is required on Windows when npm resolves to a .cmd file
+                        shell=_IS_WIN,
                     )
                     if npm_result.returncode == 0:
                         app_info.logs.append("[Runner] npm install: SUCCESS")
@@ -412,13 +449,14 @@ def start_app_runner(run_id: str, files: list[dict[str, str]]) -> dict[str, Any]
                 env = os.environ.copy()
                 env["PORT"] = str(port)
                 proc = subprocess.Popen(
-                    ["node", entry_point],
+                    [NODE_CMD, entry_point],
                     cwd=sandbox_path,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     env=env,
                     text=True,
                     bufsize=1,
+                    shell=_IS_WIN,
                 )
                 # Wait briefly to check if it immediately crashed due to missing node_modules
                 time.sleep(1.5)
