@@ -243,34 +243,103 @@ def validate_implementation(
     checks_performed.append("frontend_backend_contract")
     backend_routes: dict[str, set[str]] = {}  # normalized_path -> set of HTTP methods
 
+    # Track Express router mount prefixes: app.use('/api/v1', router)
+    _express_mount_prefixes: list[str] = []
+
     for path, content in files_map.items():
-        if not path.endswith(".py"):
-            continue
+        # -----------------------------------------------------------
+        # Python backends: Flask / FastAPI
+        # -----------------------------------------------------------
+        if path.endswith(".py"):
+            # Look for Flask routes: @app.route("/path", methods=["GET", "POST"])
+            flask_matches = re.finditer(
+                r'@(?:[a-zA-Z0-9_]+\.)?route\(\s*["\']([^"\']+)["\'](?:\s*,\s*methods\s*=\s*\[([^\]]+)\])?',
+                content,
+            )
+            for m in flask_matches:
+                r_path = _normalize_route_path(m.group(1))
+                methods_raw = m.group(2)
+                if methods_raw:
+                    methods = {x.strip(" '\"").upper() for x in methods_raw.split(",")}
+                else:
+                    methods = {"GET"}
+                backend_routes.setdefault(r_path, set()).update(methods)
 
-        # Look for Flask routes: @app.route("/path", methods=["GET", "POST"])
-        flask_matches = re.finditer(
-            r'@(?:[a-zA-Z0-9_]+\.)?route\(\s*["\']([^"\']+)["\'](?:\s*,\s*methods\s*=\s*\[([^\]]+)\])?',
-            content,
-        )
-        for m in flask_matches:
-            r_path = _normalize_route_path(m.group(1))
-            methods_raw = m.group(2)
-            if methods_raw:
-                methods = {x.strip(" '\"").upper() for x in methods_raw.split(",")}
-            else:
-                methods = {"GET"}
-            backend_routes.setdefault(r_path, set()).update(methods)
+            # Look for FastAPI decorators: @app.get("/path"), @router.post("/path")
+            method_decorators = re.finditer(
+                r'@(?:[a-zA-Z0-9_]+\.)?(get|post|put|delete|patch)\(\s*["\']([^"\']+)["\']',
+                content,
+                re.IGNORECASE,
+            )
+            for m in method_decorators:
+                method = m.group(1).upper()
+                r_path = _normalize_route_path(m.group(2))
+                backend_routes.setdefault(r_path, set()).update([method])
 
-        # Look for FastAPI / Express-like decorators: @app.get("/path"), @router.post("/path")
-        method_decorators = re.finditer(
-            r'@(?:[a-zA-Z0-9_]+\.)?(get|post|put|delete|patch)\(\s*["\']([^"\']+)["\']',
-            content,
-            re.IGNORECASE,
-        )
-        for m in method_decorators:
-            method = m.group(1).upper()
-            r_path = _normalize_route_path(m.group(2))
-            backend_routes.setdefault(r_path, set()).update([method])
+        # -----------------------------------------------------------
+        # Node.js / Express backends (.js, .ts, .mjs, .cjs)
+        # -----------------------------------------------------------
+        elif path.endswith((".js", ".ts", ".mjs", ".cjs")) and not path.startswith("static/") and not path.startswith("frontend/") and not path.startswith("public/"):
+            # Mount prefix: app.use('/api/v1', someRouter)  or  app.use('/api', router)
+            for m in re.finditer(
+                r'(?:app|server)\s*\.\s*use\s*\(\s*["\']([/][^"\']+)["\']',
+                content,
+                re.IGNORECASE,
+            ):
+                prefix = m.group(1).rstrip("/")
+                if prefix:
+                    _express_mount_prefixes.append(prefix)
+
+            # Direct Express routes: app.get('/path', ...), router.post('/path', ...)
+            for m in re.finditer(
+                r'(?:app|router|server)\s*\.\s*(get|post|put|delete|patch)\s*\(\s*["\']([^"\']+)["\']',
+                content,
+                re.IGNORECASE,
+            ):
+                method = m.group(1).upper()
+                raw_path = m.group(2)
+                if not raw_path.startswith("/"):
+                    raw_path = "/" + raw_path
+                r_path = _normalize_route_path(raw_path)
+                backend_routes.setdefault(r_path, set()).update([method])
+                # Also register with each known mount prefix so cross-check can match
+                # e.g. router.get('/calculations') + app.use('/api/v1', router) => /api/v1/calculations
+                for prefix in _express_mount_prefixes:
+                    prefixed = _normalize_route_path(prefix + raw_path)
+                    backend_routes.setdefault(prefixed, set()).update([method])
+
+            # Express app.route('/path').get(...).post(...)
+            for m in re.finditer(
+                r'(?:app|router)\s*\.\s*route\s*\(\s*["\']([^"\']+)["\']\s*\)([^;]+)',
+                content,
+                re.IGNORECASE | re.DOTALL,
+            ):
+                raw_path = m.group(1)
+                if not raw_path.startswith("/"):
+                    raw_path = "/" + raw_path
+                r_path = _normalize_route_path(raw_path)
+                chain = m.group(2)
+                chained_methods = re.findall(r'\.(get|post|put|delete|patch)\s*\(', chain, re.IGNORECASE)
+                for cm in chained_methods:
+                    backend_routes.setdefault(r_path, set()).update([cm.upper()])
+                    for prefix in _express_mount_prefixes:
+                        prefixed = _normalize_route_path(prefix + raw_path)
+                        backend_routes.setdefault(prefixed, set()).update([cm.upper()])
+
+    # Also run a second pass: now that all files are scanned, re-apply mount prefixes
+    # to bare routes that were registered before the app.use() line was encountered.
+    if _express_mount_prefixes:
+        bare_routes = [
+            (r_path, methods)
+            for r_path, methods in list(backend_routes.items())
+            if not any(r_path.startswith(pfx) for pfx in _express_mount_prefixes)
+        ]
+        for prefix in _express_mount_prefixes:
+            for bare_path, methods in bare_routes:
+                # Avoid double-prefixing /health -> /api/v1/health -> /api/v1/api/v1/health
+                if not bare_path.startswith(prefix):
+                    combined = _normalize_route_path(prefix + bare_path)
+                    backend_routes.setdefault(combined, set()).update(methods)
 
     # Extract frontend API calls from HTML, JS, TS files
     frontend_calls: list[tuple[str, str, str]] = []  # (frontend_path, method, path)
