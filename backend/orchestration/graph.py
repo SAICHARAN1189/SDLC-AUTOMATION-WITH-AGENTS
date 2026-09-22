@@ -19,6 +19,7 @@ from backend.orchestration.routing import (
 from backend.orchestration.state import ProjectState
 from backend.persistence import repositories
 from backend.models.schemas import new_id
+from backend.utils.logging import logger
 
 _compiled = None
 
