@@ -388,6 +388,25 @@ def start_app_runner(run_id: str, files: list[dict[str, str]]) -> dict[str, Any]
             except Exception as e:
                 app_info.logs.append(f"[Runner] Node syntax check error: {e}")
 
+            # Run npm install if package.json exists
+            pkg_json = sandbox_path / "package.json"
+            if pkg_json.is_file():
+                try:
+                    app_info.logs.append("[Runner] Running npm install...")
+                    npm_result = subprocess.run(
+                        ["npm", "install", "--prefer-offline", "--no-audit", "--no-fund"],
+                        cwd=sandbox_path,
+                        capture_output=True,
+                        text=True,
+                        timeout=120,
+                    )
+                    if npm_result.returncode == 0:
+                        app_info.logs.append("[Runner] npm install: SUCCESS")
+                    else:
+                        app_info.logs.append(f"[Runner] npm install warning: {npm_result.stderr.strip()[:200]}")
+                except Exception as npm_exc:
+                    app_info.logs.append(f"[Runner] npm install error: {npm_exc}")
+
             # Try running node server
             try:
                 env = os.environ.copy()
@@ -402,7 +421,7 @@ def start_app_runner(run_id: str, files: list[dict[str, str]]) -> dict[str, Any]
                     bufsize=1,
                 )
                 # Wait briefly to check if it immediately crashed due to missing node_modules
-                time.sleep(0.4)
+                time.sleep(1.5)
                 if proc.poll() is None:
                     app_info.process = proc
                     launched_via_process = True
