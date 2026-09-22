@@ -437,6 +437,29 @@ export const LiveRun: React.FC = () => {
     model: run?.primary_model || "Multi-Model Router",
   };
 
+  // Derive real stage runtime from agent output _meta.duration (set by base.py via perf_counter())
+  const getStageDuration = (stageKey: string): string => {
+    const output = getStageOutput(stageKey) as Record<string, any> | undefined;
+    const meta = output?._meta as Record<string, any> | undefined;
+    const raw = meta?.duration;
+    if (raw != null && typeof raw === "number" && raw > 0) {
+      if (raw < 60) return `${raw.toFixed(1)}s`;
+      const mins = Math.floor(raw / 60);
+      const secs = (raw % 60).toFixed(0).padStart(2, "0");
+      return `${mins}m ${secs}s`;
+    }
+    // Fallback: derive from pipeline_run started_at vs completed_at for final stages
+    if (run?.started_at) {
+      const start = new Date(run.started_at).getTime();
+      const end = run.completed_at ? new Date(run.completed_at).getTime() : Date.now();
+      const totalSec = (end - start) / 1000;
+      if (totalSec > 0 && totalSec < 3600) {
+        return `~${totalSec.toFixed(0)}s total`;
+      }
+    }
+    return "—";
+  };
+
   if (!runId) {
     return (
       <div className="h-full flex flex-col items-center justify-center p-12 text-center space-y-4">
@@ -727,7 +750,7 @@ export const LiveRun: React.FC = () => {
                 ? reviewReworkCount
                 : 0
             }
-            duration="1.4s"
+            duration={getStageDuration(selectedStageKey)}
             inputs={getStageInput(selectedStageKey)}
             outputs={getStageOutput(selectedStageKey)}
           />
