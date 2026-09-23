@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     database_url: str = ""
     db_pool_size: int = 10
     db_max_overflow: int = 20
-    db_pool_recycle: int = 1800
+    db_pool_recycle: int = 60
     db_connect_timeout: int = 10
 
     @property

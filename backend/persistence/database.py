@@ -11,6 +11,8 @@ from backend.config.settings import settings
 from backend.models.database_models import Base
 from backend.utils.logging import logger
 
+from sqlalchemy.pool import NullPool
+
 _engine: Optional[Engine] = None
 _SessionLocal: Optional[sessionmaker[Session]] = None
 
@@ -55,25 +57,40 @@ def get_engine() -> Engine:
     try:
         connect_args = {
             "connect_timeout": getattr(settings, "db_connect_timeout", 10),
-            # Keep alive so the OS doesn't silently drop idle TCP connections
+            # Keep alive so intermediate routers/NATs don't drop idle TCP connections
             "keepalives": 1,
             "keepalives_idle": 30,
             "keepalives_interval": 10,
             "keepalives_count": 5,
         }
-        _engine = create_engine(
-            db_url,
-            pool_size=getattr(settings, "db_pool_size", 10),
-            max_overflow=getattr(settings, "db_max_overflow", 15),
-            pool_timeout=30,
-            # Recycle connections after 3 minutes (below Supabase's ~5 min idle timeout)
-            pool_recycle=getattr(settings, "db_pool_recycle", 180),
-            # Pre-ping: issue a lightweight SELECT before handing out a pooled connection.
-            # This transparently retries on stale connections that Supabase has closed.
-            pool_pre_ping=True,
-            connect_args=connect_args,
-            future=True,
-        )
+
+        # Supabase Supavisor Transaction Pooler (port 6543):
+        # Supavisor manages connection pooling on the server side and terminates
+        # idle client connections after 5 minutes.
+        # Using NullPool prevents SQLAlchemy from holding stale idle connections,
+        # completely eliminating "server closed the connection unexpectedly" errors.
+        is_transaction_pooler = ":6543" in db_url or "pooler.supabase.com" in db_url
+
+        if is_transaction_pooler:
+            logger.info("[DB] Supabase transaction pooler (:6543) detected — using NullPool")
+            _engine = create_engine(
+                db_url,
+                poolclass=NullPool,
+                connect_args=connect_args,
+                future=True,
+            )
+        else:
+            _engine = create_engine(
+                db_url,
+                pool_size=getattr(settings, "db_pool_size", 10),
+                max_overflow=getattr(settings, "db_max_overflow", 15),
+                pool_timeout=30,
+                pool_recycle=getattr(settings, "db_pool_recycle", 60),
+                pool_pre_ping=True,
+                connect_args=connect_args,
+                future=True,
+            )
+
         _SessionLocal = sessionmaker(bind=_engine, autoflush=False, autocommit=False, expire_on_commit=False, future=True)
         logger.info("[DB] Connection successful")
         return _engine
@@ -130,42 +147,22 @@ def init_db() -> None:
 def session_scope() -> Iterator[Session]:
     """Provide a transactional scope around a series of operations.
     Commits only after successful operations; rolls back and re-raises on exception.
-    Retries once on transient OperationalError (e.g. Supabase closed the connection
-    mid-pipeline after pool_pre_ping recycled the engine).
     """
-    from sqlalchemy.exc import OperationalError as SAOperationalError
-
     get_engine()  # Ensure engine is initialized
     if _SessionLocal is None:
         raise DatabaseConfigurationError("Database session factory is not initialized")
 
-    for attempt in range(2):  # 1 retry on transient connection drop
-        session = _SessionLocal()
+    session = _SessionLocal()
+    try:
+        yield session
+        session.commit()
+        logger.debug("[DB] Transaction committed")
+    except Exception as exc:
+        session.rollback()
+        logger.error(f"[DB] Transaction failed: {type(exc).__name__}")
+        raise
+    finally:
         try:
-            yield session
-            session.commit()
-            logger.debug("[DB] Transaction committed")
-            return
-        except SAOperationalError as exc:
-            session.rollback()
             session.close()
-            if attempt == 0 and "server closed the connection" in str(exc).lower():
-                logger.warning("[DB] Transient connection drop detected — resetting pool and retrying once.")
-                try:
-                    get_engine().dispose()
-                except Exception:
-                    pass
-                continue  # retry
-            logger.error(f"[DB] Transaction failed after retry: {type(exc).__name__}")
-            raise
-        except Exception as exc:
-            session.rollback()
-            logger.error(f"[DB] Transaction failed: {type(exc).__name__}")
-            logger.info("[DB] Rollback completed")
-            raise
-        finally:
-            try:
-                session.close()
-            except Exception:
-                pass
-        break
+        except Exception:
+            pass
