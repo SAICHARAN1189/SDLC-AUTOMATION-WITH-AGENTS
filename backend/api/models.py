@@ -21,15 +21,20 @@ def get_models(run_id: str):
 @require_auth
 def benchmark():
     body = request.get_json(silent=True) or {}
+    models_to_test = body.get("models") or [
+        "gemini-3.8-flash",
+        "openai/gpt-oss-120b",
+        "openai/gpt-oss-20b",
+    ]
     agent = MultiModelAgent()
     result = agent.run(
         {
             "user_id": g.user["id"],
             "run_id": "benchmark",
-            "benchmark_prompt": body.get("prompt") or "Sketch a secure checkout service",
-            "comparison_models": body.get("models"),
-            "demo_mode": body.get("demo_mode", True),
-            "user_idea": body.get("idea") or "secure checkout",
+            "benchmark_prompt": body.get("prompt") or "Design a resilient backend order processing pipeline with payment tokenization and SQL injection protections.",
+            "comparison_models": models_to_test,
+            "demo_mode": body.get("demo_mode", False),
+            "user_idea": body.get("idea") or "order processing",
         }
     )
     return ok(result)

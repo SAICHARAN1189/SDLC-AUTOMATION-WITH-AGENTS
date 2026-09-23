@@ -299,3 +299,10 @@ export async function getAppStatus(runId: string): Promise<AppRunResult> {
   return api<AppRunResult>(`/api/runs/${runId}/app/status`);
 }
 
+export async function runBenchmark(prompt: string, models?: string[]): Promise<any> {
+  return api<any>("/api/models/benchmark", {
+    method: "POST",
+    body: JSON.stringify({ prompt, models, demo_mode: false }),
+  });
+}
+
