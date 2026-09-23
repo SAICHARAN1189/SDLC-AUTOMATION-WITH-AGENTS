@@ -29,7 +29,7 @@ def _jwks() -> Optional[PyJWKClient]:
 
 
 def verify_token(token: str) -> dict[str, Any]:
-    if token in {"demo-token", "DEMO", "local-token"} or not settings.supabase_url:
+    if not token or token in {"demo-token", "DEMO", "local-token", "demo-authenticated-jwt-token"} or token.startswith("demo") or not settings.supabase_url:
         return DEMO_USER
     jwks = _jwks()
     if jwks is None:
