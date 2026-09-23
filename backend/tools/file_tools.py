@@ -5,6 +5,8 @@ import re
 from pathlib import Path
 from typing import Iterable
 
+from backend.utils.validators import clean_code_content
+
 SAFE_ROOT_NAME = "generated_workspace"
 
 
@@ -40,7 +42,8 @@ def read_file(root: Path, relative: str) -> str:
 def write_file(root: Path, relative: str, content: str) -> str:
     path = resolve_safe_path(root, relative)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
+    cleaned = clean_code_content(content, relative)
+    path.write_text(cleaned, encoding="utf-8")
     return str(path.relative_to(root)).replace("\\", "/")
 
 

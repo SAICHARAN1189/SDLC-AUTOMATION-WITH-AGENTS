@@ -565,6 +565,7 @@ def get_app_status(run_id: str) -> dict[str, Any]:
                 "success": False,
                 "status": "idle",
                 "project_type": "None",
+                "preview_url": f"/api/runs/{run_id}/app/proxy/",
                 "logs": [],
                 "health_check": {
                     "ok": False,
@@ -590,7 +591,8 @@ def get_app_status(run_id: str) -> dict[str, Any]:
             "project_type": app_info.project_type,
             "entry_point": app_info.entry_point,
             "port": app_info.port,
-            "preview_url": app_info.preview_url,
+            "preview_url": f"/api/runs/{run_id}/app/proxy/",
+            "local_url": app_info.preview_url,
             "health_check": {
                 "ok": all_passed,
                 "status_code": 200 if all_passed else 500,

@@ -371,6 +371,30 @@ const DiagramsTab: React.FC<{ data: VisualArchitectureOutput | null }> = ({ data
   );
 };
 
+function formatCodeContent(content?: string): string {
+  if (!content) return "";
+  let s = content.trim();
+  if ((s.startsWith('"') && s.endsWith('"') && s.length > 2) || (s.startsWith('\\"') && s.endsWith('\\"'))) {
+    if (s.startsWith('\\"')) s = s.slice(2, -2);
+    else {
+      const inner = s.slice(1, -1).trim();
+      if (inner.startsWith('{') || inner.startsWith('<') || inner.startsWith('import') || inner.startsWith('const') || inner.startsWith('def')) {
+        s = inner;
+      }
+    }
+  }
+  if (s.includes("\\n")) {
+    const numEscaped = (s.match(/\\n/g) || []).length;
+    const numReal = (s.match(/\n/g) || []).length;
+    if (numReal <= 2 || numEscaped > numReal) {
+      s = s.replace(/\\r\\n/g, "\n").replace(/\\r/g, "\n").replace(/\\n/g, "\n").replace(/\\t/g, "  ").replace(/\\"/g, '"');
+    }
+  } else if (s.includes('\\"') && !s.replace(/\\"/g, '').includes('"')) {
+    s = s.replace(/\\"/g, '"');
+  }
+  return s;
+}
+
 /* Code */
 const CodeTab: React.FC<{ data: CodeOutput | null; runId?: string | null }> = ({ data, runId }) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -441,7 +465,7 @@ const CodeTab: React.FC<{ data: CodeOutput | null; runId?: string | null }> = ({
   const files = data.files;
   const selected = files[selectedIndex];
   const handleCopy = () => {
-    navigator.clipboard.writeText(selected?.content || "");
+    navigator.clipboard.writeText(formatCodeContent(selected?.content));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -682,29 +706,34 @@ const CodeTab: React.FC<{ data: CodeOutput | null; runId?: string | null }> = ({
                 </button>
               </div>
               <pre className="flex-1 p-4 text-xs font-mono text-zinc-200 overflow-auto whitespace-pre">
-                {selected?.content || ""}
+                {formatCodeContent(selected?.content)}
               </pre>
             </div>
           </div>
         )}
 
-        {activeView === "preview" && (
-          <div className="rounded-lg border border-[#30363d] bg-[#0d1117] overflow-hidden flex flex-col h-full min-h-[500px]">
-            {/* Mock Browser URL Bar */}
-            <div className="h-10 border-b border-[#30363d] bg-[#161b22] px-3 flex items-center justify-between gap-3 text-xs font-mono shrink-0">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
-                <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
-              </div>
+        {activeView === "preview" && (() => {
+          const proxyUrl = runId ? `/api/runs/${runId}/app/proxy/` : "";
+          const previewSrc = (appState?.preview_url && !appState.preview_url.includes("127.0.0.1"))
+            ? appState.preview_url
+            : proxyUrl;
 
-              <div className="flex-1 max-w-xl mx-auto flex items-center gap-2 px-3 py-1 rounded bg-[#0d1117] border border-[#30363d] text-zinc-300 text-xs truncate">
-                <Globe className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span className="truncate">{appState?.preview_url || "http://127.0.0.1 (App not running)"}</span>
-              </div>
+          return (
+            <div className="rounded-lg border border-[#30363d] bg-[#0d1117] overflow-hidden flex flex-col h-full min-h-[500px]">
+              {/* Mock Browser URL Bar */}
+              <div className="h-10 border-b border-[#30363d] bg-[#161b22] px-3 flex items-center justify-between gap-3 text-xs font-mono shrink-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
+                </div>
 
-              <div className="flex items-center gap-2">
-                {isRunning && (
+                <div className="flex-1 max-w-xl mx-auto flex items-center gap-2 px-3 py-1 rounded bg-[#0d1117] border border-[#30363d] text-zinc-300 text-xs truncate">
+                  <Globe className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span className="truncate">{previewSrc || "Live Sandbox Preview"}</span>
+                </div>
+
+                <div className="flex items-center gap-2">
                   <button
                     onClick={() => {
                       const iframe = document.getElementById("app-preview-frame") as HTMLIFrameElement | null;
@@ -715,54 +744,54 @@ const CodeTab: React.FC<{ data: CodeOutput | null; runId?: string | null }> = ({
                   >
                     <RotateCw className="w-3.5 h-3.5" />
                   </button>
-                )}
-                {appState?.preview_url && (
-                  <a
-                    href={appState.preview_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="p-1 rounded text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
-                    title="Open in new window"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                )}
+                  {previewSrc && (
+                    <a
+                      href={previewSrc}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-1 rounded text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+                      title="Open in new window"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Iframe or Not Running Placeholder */}
-            {isRunning && appState?.preview_url ? (
-              <div className="flex-1 bg-white relative">
-                <iframe
-                  id="app-preview-frame"
-                  src={appState.preview_url}
-                  className="w-full h-full border-0 absolute inset-0"
-                  title="App Live Preview"
-                  sandbox="allow-scripts allow-same-origin allow-forms"
-                />
-              </div>
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center gap-3 p-8 text-center text-zinc-400">
-                <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                  <Play className="w-5 h-5 fill-current ml-0.5" />
+              {/* Iframe or Not Running Placeholder */}
+              {previewSrc ? (
+                <div className="flex-1 bg-white relative">
+                  <iframe
+                    id="app-preview-frame"
+                    src={previewSrc}
+                    className="w-full h-full border-0 absolute inset-0"
+                    title="App Live Preview"
+                    sandbox="allow-scripts allow-same-origin allow-forms"
+                  />
                 </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-zinc-200">The application is not running yet</p>
-                  <p className="text-xs text-zinc-500">
-                    Click "Start App" above to launch the codebase and preview it live.
-                  </p>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center gap-3 p-8 text-center text-zinc-400">
+                  <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                    <Play className="w-5 h-5 fill-current ml-0.5" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-zinc-200">The application is not running yet</p>
+                    <p className="text-xs text-zinc-500">
+                      Click "Start App" above to launch the codebase and preview it live.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleStart}
+                    disabled={starting}
+                    className="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs shadow-sm transition-all cursor-pointer"
+                  >
+                    {starting ? "Starting..." : "Start App Now"}
+                  </button>
                 </div>
-                <button
-                  onClick={handleStart}
-                  disabled={starting}
-                  className="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs shadow-sm transition-all cursor-pointer"
-                >
-                  {starting ? "Starting..." : "Start App Now"}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          );
+        })()}
 
         {activeView === "health" && (
           <div className="rounded-lg border border-[#30363d] bg-[#0d1117] p-4 space-y-4 font-mono text-xs">
@@ -1018,7 +1047,7 @@ const TestsTab: React.FC<{ data: TestOutput | null }> = ({ data }) => {
                   <FileCode className="w-3 h-3 text-sky-400 shrink-0" />
                   <span>{f.path}</span>
                 </summary>
-                <pre className="mt-1 px-3 py-2.5 bg-[#090d13] rounded text-[11px] text-zinc-300 whitespace-pre-wrap overflow-x-auto border border-[#30363d]">{f.content}</pre>
+                <pre className="mt-1 px-3 py-2.5 bg-[#090d13] rounded text-[11px] text-zinc-300 whitespace-pre-wrap overflow-x-auto border border-[#30363d]">{formatCodeContent(f.content)}</pre>
               </details>
             ))}
           </div>
